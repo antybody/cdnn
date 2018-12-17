@@ -42,7 +42,11 @@ def detectoutliers(data):
 
 # 从excel 中读取数据
 
-ele_file = '../ele.xls' #餐饮数据
+'''
+  以下是测试数据
+'''
+
+ele_file = '../ele.xls' # 电力数据
 
 data = pd.read_excel(ele_file, sheet_name='37480-2') #读取数据
 
