@@ -1,11 +1,11 @@
 #-*-coding:utf-8-*-
 """
-四分位法 通过训练样本 计算 最大最小值
-用该数据 判断 数据
+四分位法 通过训练样本 计算 25% 中位数 75% 中位数，从而获取上下阈值
+不适合线性数列
+无参考
 """
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 
@@ -38,37 +38,6 @@ def detectoutliers(data):
 
     return dd
 
-
-
-# 从excel 中读取数据
-
-'''
-  以下是测试数据
-'''
-
-ele_file = '../ele.xls' # 电力数据
-
-data = pd.read_excel(ele_file, sheet_name='37480-2') #读取数据
-
-
-data['TIMESTAMP'] = pd.to_datetime(data['TIMESTAMP'])
-
-
-dt = data['FP_TOTALENG']
-
-
-l = detectoutliers(data)
-
-print(l)
-
-plt.plot( data['TIMESTAMP'],dt, label=u'first')
-
-# print(x,y)
-plt.plot(l['TIMESTAMP'], l['FP_TOTALENG'], 'ro',label='check')
-
-plt.legend()
-
-plt.show()
 
 
 
