@@ -5,7 +5,6 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy import io as spio
 
 import pandas as pd
 

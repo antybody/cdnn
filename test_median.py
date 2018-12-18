@@ -6,7 +6,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
-from  cdnn.models.median import detectoutliers
+from  models.median import detectoutliers
 
 '''
   以下是测试数据
