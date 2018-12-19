@@ -14,16 +14,16 @@ import io
 import numpy as np
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
-ele_file = '../ele.xls' # 电力数据
+# ele_file = '../data/ele.xls' # 电力数据
 
-df = pd.read_excel(ele_file, sheet_name='86-2') #读取数据
+# df = pd.read_excel(ele_file, sheet_name='19573_3') #读取数据
 
-data = np.array(df['FP_TOTALENG'])
+# data = np.array(df['FP_TOTALENG'])
 
 # 自相关性图
 # plot_acf(data)
-plt.figure()
-df['FP_TOTALENG'].plot()
+# plt.figure()
+# df['FP_TOTALENG'].plot()
 # plt.show()
 
 # 平稳性检测
@@ -33,21 +33,23 @@ from statsmodels.tsa.stattools import adfuller
 
 # 差分
 # print(df['FP_TOTALENG'])
-D_data = df['FP_TOTALENG'].diff().dropna()
+def arima_run(df):
+    D_data = df['FP_TOTALENG'].diff().dropna()
+    return D_data
 # D_data.columns = [u'差分']
 # print(D_data[72])
 # print(df['FP_TOTALENG'])
-D_data.plot()   #画出差分后的时序图
+# D_data.plot()   #画出差分后的时序图
 #
 # plot_acf(D_data)
 #
-plt.show()
-
-print(u'差分序列的ADF 检验结果为： ', adfuller(D_data))   #平稳性检验
-#一阶差分后的序列的时序图在均值附近比较平稳的波动， 自相关性有很强的短期相关性， 单位根检验 p值小于 0.05 ，所以说一阶差分后的序列是平稳序列
-
-from statsmodels.stats.diagnostic import acorr_ljungbox
-print(u'差分序列的白噪声检验结果：',acorr_ljungbox(D_data, lags= 1)) #返回统计量和 p 值 p值小于 0.05
+# plt.show()
+#
+# print(u'差分序列的ADF 检验结果为： ', adfuller(D_data))   #平稳性检验
+# #一阶差分后的序列的时序图在均值附近比较平稳的波动， 自相关性有很强的短期相关性， 单位根检验 p值小于 0.05 ，所以说一阶差分后的序列是平稳序列
+#
+# from statsmodels.stats.diagnostic import acorr_ljungbox
+# print(u'差分序列的白噪声检验结果：',acorr_ljungbox(D_data, lags= 1)) #返回统计量和 p 值 p值小于 0.05
 
 # 对模型定阶
 # from statsmodels.tsa.arima_model import ARIMA

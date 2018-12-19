@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
-from pyculiarity.detect_anoms import detect_anoms
+from cdnn.pyculiarity.detect_anoms import detect_anoms
 from math import ceil
 from pandas import DataFrame, Series, Timestamp
 import numpy as np

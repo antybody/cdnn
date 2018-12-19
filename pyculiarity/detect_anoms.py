@@ -1,4 +1,4 @@
-from pyculiarity.date_utils import format_timestamp
+from cdnn.pyculiarity.date_utils import format_timestamp
 from rstl import STL
 from itertools import groupby
 from math import trunc, sqrt

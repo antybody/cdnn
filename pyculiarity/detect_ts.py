@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
-from pyculiarity.date_utils import format_timestamp, get_gran, date_format, datetimes_from_ts
-from pyculiarity.detect_anoms import detect_anoms
+from cdnn.pyculiarity.date_utils import format_timestamp, get_gran, date_format, datetimes_from_ts
+from cdnn.pyculiarity.detect_anoms import detect_anoms
 from math import ceil
 from pandas import DataFrame, Timestamp
 import datetime

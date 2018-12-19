@@ -37,15 +37,8 @@ def fast_moving_average(x, N):
 #
 # df = pd.read_csv(io.StringIO(ass_data.decode('utf-8')))  # python2使用StringIO.StringIO
 
-ele_file = '../ele.xls' # 电力数据
+# ele_file = '../data/ele.xls' # 电力数据
+#
+# df = pd.read_excel(ele_file, sheet_name='12021-2') #读取数据
 
-df = pd.read_excel(ele_file, sheet_name='37480-2') #读取数据
 
-data = np.array(df['FP_TOTALENG'])
-
-ma_data = fast_moving_average(np.array(data).tolist(), 3)
-
-plt.figure()
-plt.plot(data, color='g')
-plt.plot(ma_data, color='r')
-plt.show()
