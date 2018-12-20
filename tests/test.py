@@ -6,6 +6,7 @@ from  cdnn.models.smooth import moving_average,fast_moving_average
 from  cdnn.models.clof import clof
 
 from  cdnn.predata.pre_lof import pre_lof
+from  cdnn.predata.pre_knn import pre_knn
 
 import pandas as pd
 import numpy as np
@@ -18,11 +19,14 @@ sheetname = ['86-2','12021-2','37480-2','18527_2','19573_3']
 
 
 def get_data():
-    twitter_example_data = pd.read_excel('../data/ele.xlsx',sheet_name=sheetname[0])
+    twitter_example_data = pd.read_excel('../data/ele.xlsx',sheet_name=sheetname[3])
     # 这次是处理后的数据
-    data_after = pre_lof(twitter_example_data,'2017-10')
-    data_after.reset_index(drop=False, inplace=True)
-    return data_after
+    # data_after = pre_lof(twitter_example_data, '', '')
+    # data_after = pre_lof(twitter_example_data, '2017', '')
+    # data_after = pre_lof(twitter_example_data,'2017-10','')
+    # data_after = pre_lof(twitter_example_data,'2017-10-05','2017-10-19')
+    # data_after.reset_index(drop=False, inplace=True)
+    return twitter_example_data
 
 
 '''时间序列的 S-H-ESD 算法测试 '''
@@ -34,7 +38,7 @@ def create_pyculiarity():
     plt.plot(pd.to_datetime(data['TIMESTAMP']), data['FP_TOTALENG'], label=u'first')
     # 调用方法
     results = detect_ts(data,
-                        max_anoms=0.05,
+                        max_anoms=0.3,
                         direction='both', e_value=True)
     # 输入检测结果
     print(results)
@@ -98,7 +102,20 @@ def create_clof():
 '''对数据预处理 测试'''
 def pre_data():
     data = get_data()
-    data_after = pre_lof(data)
+    data_after = pre_lof(data, '', '')
+    data_after.reset_index(drop=False,inplace=True)
+    plt.figure()
+
+    plt.plot(data['TIMESTAMP'], data['FP_TOTALENG'],label='first')
+    plt.plot(data_after['TIMESTAMP'], data_after['FP_TOTALENG'],label='after')
+
+    plt.legend()
+    plt.show()
+
+'''对数据预处理 测试'''
+def pre_data_knn():
+    data = get_data()
+    data_after = pre_knn(data, '', '')
     data_after.reset_index(drop=False,inplace=True)
     plt.figure()
 
@@ -111,6 +128,6 @@ def pre_data():
 
 
 if __name__ ==  '__main__':
-    create_pyculiarity()
+    pre_data_knn()
 
 

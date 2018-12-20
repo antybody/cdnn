@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import impyute as impy
 
-def pre_lof(data,year,year1):
+def pre_knn(data,year,year1):
     # 设定时间序列
     # data['TIMESTAMP'] = pd.to_datetime(data['TIMESTAMP'])
     data = data.set_index('TIMESTAMP')
@@ -29,7 +29,7 @@ def pre_lof(data,year,year1):
     # print(isnullcon['FP_TOTALENG'])
     # 这里来个判断，如果数据里没有需要平滑的点，那么直接输出
     if isnullcon['FP_TOTALENG']:
-        df_after = impy.locf(df_period_clone, axis='FP_TOTALENG')
+        df_after = impy.fast_knn(df_period_clone,k=13,eps=0,p=2)
         for i in range(len(df_period_clone)):
             # print('-----平缓后数据-----')
             # print(df_after[0][i])
