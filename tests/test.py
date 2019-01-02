@@ -18,6 +18,7 @@ import impyute as impy
 sheetname = ['86-2','12021-2','37480-2','18527_2','19573_3']
 
 
+
 def get_data():
     twitter_example_data = pd.read_excel('../data/ele.xlsx',sheet_name=sheetname[3])
     # 这次是处理后的数据
