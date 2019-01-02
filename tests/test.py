@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 import impyute as impy
 
 
-
 sheetname = ['86-2','12021-2','37480-2','18527_2','19573_3']
 
 
