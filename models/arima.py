@@ -34,7 +34,7 @@ from statsmodels.tsa.stattools import adfuller
 # 差分
 # print(df['FP_TOTALENG'])
 def arima_run(df):
-    D_data = df['FP_TOTALENG'].diff().dropna()
+    D_data = df['dt_val'].diff().dropna()
     return D_data
 # D_data.columns = [u'差分']
 # print(D_data[72])

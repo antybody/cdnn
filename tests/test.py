@@ -1,3 +1,4 @@
+import datetime
 
 from cdnn.pyculiarity import detect_ts
 from  cdnn.models.median import detectoutliers
@@ -5,7 +6,7 @@ from  cdnn.models.arima import arima_run
 from  cdnn.models.smooth import moving_average,fast_moving_average
 from  cdnn.models.clof import clof
 
-from  cdnn.predata.pre_lof import pre_lof
+from cdnn.predata.pre_lof import pre_lof, replace_zero, replace_data
 from  cdnn.predata.pre_knn import pre_knn
 
 import pandas as pd
@@ -17,12 +18,13 @@ from cdnn.db.main import select
 
 import impyute as impy
 
+from cdnn.utils.publicUtil import get_mode, oracleUtil
 
 sheetname = ['86-2','12021-2','37480-2','18527_2','19573_3']
 
 
 def get_data():
-    twitter_example_data = pd.read_excel('../data/ele.xlsx',sheet_name=sheetname[2])
+    twitter_example_data = pd.read_excel('D:\workroot\worktools\git\GitHouse\cdnn\data\ele.xlsx',sheet_name=sheetname[2])
     # 这次是处理后的数据
     # data_after = pre_lof(twitter_example_data, '', '')
     # data_after = pre_lof(twitter_example_data, '2017', '')
@@ -262,9 +264,9 @@ def pre_data_knn():
     plt.show()
 
     # 判断当前值与model的相对位置
-    def dist(num, model):
-        result=num - model
-        return result
+def dist(num, model):
+    result=num - model
+    return result
 
     '''
     #把list整理成标准json   data为修正后的数据
@@ -274,7 +276,7 @@ def pre_data_knn():
     type:异常类型
     '''
 
-    def result(list, old_data, new_data, type):
+def result(list, old_data, new_data, type):
         if not list:
             return pd.DataFrame()
         result=[]
