@@ -19,7 +19,7 @@ sheetname = ['86-2','12021-2','37480-2','18527_2','19573_3']
 
 
 def get_data():
-    twitter_example_data = pd.read_excel('../data/ele.xlsx',sheet_name=sheetname[3])
+    twitter_example_data = pd.read_excel('../data/ele.xlsx',sheet_name=sheetname[2])
     # 这次是处理后的数据
     # data_after = pre_lof(twitter_example_data, '', '')
     # data_after = pre_lof(twitter_example_data, '2017', '')
@@ -73,9 +73,11 @@ def create_median():
 
 def create_arima():
     data = get_data()
+    print(data)
     plt.figure()
     data['FP_TOTALENG'].plot()
     df = arima_run(data)
+    print(df)
     df.plot()
     plt.show()
 
@@ -128,6 +130,6 @@ def pre_data_knn():
 
 
 if __name__ ==  '__main__':
-    pre_data_knn()
+    create_arima()
 
 
