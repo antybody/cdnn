@@ -1,20 +1,25 @@
-import cx_Oracle
+
 import configparser
 import os
 import sys
 
-def getOrcl232Conn():
+dbConfig = {}
+
+def getConfig():
     try:
         config = configparser.ConfigParser()
-        config.read(os.path.join(sys.path[0], 'dbconf.ini'))
+        curpath = os.path.dirname(os.path.realpath(__file__))
+
+        config.read(os.path.join(curpath, 'dbconf.ini'))
         # config.read(sys.path[0] + '\\dbconf.ini')
-        username = config.get('orcl', 'username')
-        password = config.get('orcl', 'password')
-        url = config.get('orcl', 'url')
-        sid = config.get('orcl', 'sid')
+        dbConfig = {
+          'username' :config.get('orcl', 'username'),
+          'password': config.get('orcl', 'password'),
+          'url': config.get('orcl', 'url'),
+          'sid': config.get('orcl', 'sid')
+        }
         # conn = cx_Oracle.connect(username, password, url+'/'+sid)
-        conn = cx_Oracle.connect('gxsy', 'gxsy123', '120.26.116.232:1521/orcl')
+        # conn = cx_Oracle.connect('gxsy', 'gxsy123', '120.26.116.232:1521/orcl')
+        return dbConfig
     except Exception:
-        conn.close()
-    else:
-        return conn
+        return {}

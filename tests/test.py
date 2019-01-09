@@ -12,6 +12,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# 数据库相关
+from cdnn.db.main import select
+
 import impyute as impy
 
 
@@ -28,6 +31,19 @@ def get_data():
     # data_after.reset_index(drop=False, inplace=True)
     return twitter_example_data
 
+def get_db_data():
+
+    starttime = '2017-01-01'
+    endtime = '2017-12-30'
+
+    sql = "select id,dt_time,dt_val from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('"  +starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" +endtime+"','yyyy/mm/dd')"
+
+    data = select(sql)
+
+    # 处理成python 可识别的
+    df = pd.DataFrame(list(data), columns=['id','dt_time','dt_val'])
+
+    print(df)
 
 '''时间序列的 S-H-ESD 算法测试 '''
 ''' 时间周期越短越准确'''
@@ -130,6 +146,6 @@ def pre_data_knn():
 
 
 if __name__ ==  '__main__':
-    create_arima()
+    get_db_data()
 
 
