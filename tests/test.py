@@ -88,12 +88,130 @@ def create_median():
 '''差分法 测试'''
 
 def create_arima():
+    # 显示所有列
+    pd.set_option('display.max_columns', None)
+    # 显示所有行
+    pd.set_option('display.max_rows', None)
     data = get_data()
     print(data)
     plt.figure()
-    data['FP_TOTALENG'].plot()
+    data['dt_val'].plot()
     df = arima_run(data)
+    obj=np.array(df).tolist();
+    print("差值数据")
     print(df)
+    print("obj是",len(obj),"df",len(df))
+    model = get_mode(obj)
+    print("众数",model[0])
+    it=pd.DataFrame({'key': obj })
+
+    it_copy=it.copy()
+
+    # 删除/选取某列含有特定数值的行
+    # 通过~取反，选取不包含数字model的行
+    it=it[~it['key'].isin(model)]
+
+
+    print("剔除mode后")
+
+
+    data_index = [];#记录所有异常点的坐标位置,在元数据中
+
+    #1.找出0位置
+    data_zero=data[(data.dt_val == 0)].dt_time.tolist()
+
+
+    # 2.找出负值位置
+    data_minus=data[(data.dt_val < 0)].dt_time.tolist()
+
+
+    #3.缺失数据
+    # 补充了数据 ,这时补充的数据都是 0
+    df_period = data.resample('D', on='dt_time').sum()
+    df_period=df_period.reset_index()
+    data_miss = []
+    for index, row in df_period.iterrows():  # 获取每行的index、row
+        if data[(data.dt_time == row[0])].index.tolist():
+           a=1;
+        else:
+            data_miss.append(row[0])
+            t_str=str(row[0])
+            d=datetime.datetime.strptime(t_str, '%Y-%m-%d %H:%M:%S')+datetime.timedelta(days=-1)
+            print("缺失时间:",str(d))
+
+
+    print("it处理数据",it)
+    end = it.tail(1)["key"].index.values[0]#最后一个不做处理
+    print("剔除mode后,长度为",len(it_copy),",剔除mode后,长度为", len(it),it.tail(1)["key"])
+
+    it1=it_copy[it_copy['key'].isin(model)]
+    print("model的个数为:",len(it1))
+
+    # 寻找异常点
+    for row in it.itertuples(index=True, name='Pandas'):
+        if(row[1]<0 and row[0]>0 and row[0]<end) :
+                    #当前点与model的差值
+                    now = dist(row[1],model[0]);
+                    #前一个点与model的差值
+                    last=dist(it_copy.loc[[row[0] - 1]].values,model[0]);
+
+                    if (round(it_copy.loc[row[0] - 1]["key"], 3)!= round(model[0], 3) and last>0 and abs(last) > 4 * abs(model[0])):
+                        print("前一个点信息:",row[0] - 1, it_copy.loc[[row[0] - 1]].key, "是异常点")
+                        data_index.append(row[0] - 1)
+                        continue
+
+                    # 后一个点与model的差值
+                    next=dist(it_copy.loc[[row[0] + 1]].values,model[0]);
+                    print(it_copy.loc[row[0] + 1]["key"])
+                    if (round(it_copy.loc[row[0] + 1]["key"], 3)!= round(model[0], 3) and next > 0 and abs(next) > 4 * abs(model[0])):
+                        print("当前点信息:", row[0] , it.loc[[row[0]]]["key"], "是异常点")
+                        data_index.append(row[0] )
+
+    data_index=[i + 1 for i in data_index]#修正为元数据中的位置
+    data_error=[]#异常点集合
+
+    data_allindex = data.index.tolist()
+    for i, val in enumerate(data_index):
+        print("序号：%s   值：%s" % (i + 1, val))
+        if i in data_allindex:
+            data_error.append(data.loc[[val]].dt_time[val])
+
+
+   #极值
+    Elist = data_zero
+    if data_minus :
+        Elist=Elist+data_minus
+    if data_miss:
+        Elist=Elist+data_miss
+    data_max=list(set(data_error).difference(set(Elist)))
+    #无异常数列
+    if data_max:
+        Elist=Elist+data_max
+
+    #构标准时间段
+    data_normal=data[~data['dt_time'].isin(Elist)]
+
+    data_amend = replace_zero(df_period.copy())#负值替换成0
+    data_amend =replace_data(data_amend.copy())#0替换成修正值
+    data_amend=data_amend.reset_index()
+
+    #处理结果封装成标准字段
+    datas_normal=result(data_normal.dt_time.tolist(), data, data_amend, 0)
+    datas_zero=result(data_zero, data, data_amend, 2)
+    datas_miss = result(data_miss, data, data_amend, 1)#缺失值
+    datas_minus=result(data_minus, data, data_amend, 3)
+    #极值处理
+    datas_max=result(data_max, data, data_amend, 4)
+
+   #汇总所有数据
+    list_all=pd.concat([datas_normal, datas_zero, datas_miss, datas_minus, datas_max], axis=0,
+                               ignore_index=True)
+
+    list_all = list_all.sort_values(by = 'dt_time',axis = 0,ascending = True)#按时间排序
+
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data, 'data_in1')
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'error_out1')
+    print(list_all)
     df.plot()
     plt.show()
 
@@ -142,6 +260,40 @@ def pre_data_knn():
 
     plt.legend()
     plt.show()
+
+    # 判断当前值与model的相对位置
+    def dist(num, model):
+        result=num - model
+        return result
+
+    '''
+    #把list整理成标准json   data为修正后的数据
+    list:要处理的时间戳
+    old_data:基准数据
+    new_data:对比数据
+    type:异常类型
+    '''
+
+    def result(list, old_data, new_data, type):
+        if not list:
+            return pd.DataFrame()
+        result=[]
+        for i, values in enumerate(list):
+            dt_item=new_data[(new_data.dt_time == str(values))].copy()  # 获取一行数据
+
+            dt_item["dt_reason"]=type  # 添加异常类型
+            if type != 1:  # 如果不是缺失数据就填充其原始数据
+                dt_item_old=old_data[(old_data.dt_time == str(values))].copy()  # 获取一行数据传入原数据
+                dt_item["dt_val"]=dt_item_old["dt_val"].values  # 老数据中的val
+            if type != 0:
+                dt_item["dt_eidt"]=dt_item["dt_val"].values  # 修正值
+            # else:
+            #     dt_item["dt_eidt"]=dt_item["dt_val"].values
+            if i == 0:
+                result=dt_item.copy()
+                continue
+            result=result.append(dt_item, ignore_index=True)
+        return result
 
 
 
