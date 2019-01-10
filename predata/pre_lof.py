@@ -63,9 +63,6 @@ def replace_data(df_period):
 
     return df_period_clone
 
-
-
-
 #将负值替换为0
 def replace_zero(data):
     # data = datas.copy()
