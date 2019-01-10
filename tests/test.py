@@ -1,4 +1,8 @@
+
 import datetime
+import operator
+
+from sqlalchemy import create_engine
 
 from cdnn.pyculiarity import detect_ts
 from  cdnn.models.median import detectoutliers
@@ -24,9 +28,9 @@ sheetname = ['86-2','12021-2','37480-2','18527_2','19573_3']
 
 
 def get_data():
-    twitter_example_data = pd.read_excel('D:\workroot\worktools\git\GitHouse\cdnn\data\ele.xlsx',sheet_name=sheetname[2])
+    twitter_example_data = pd.read_excel('D:\workroot\workspace\pythonpace1\python\cdnn\data\ele.xlsx',sheet_name=sheetname[2])
     # 这次是处理后的数据
-    # data_after = pre_lof(twitter_example_data, '', '')
+    data_after = pre_lof(twitter_example_data, '', '')
     # data_after = pre_lof(twitter_example_data, '2017', '')
     # data_after = pre_lof(twitter_example_data,'2017-10','')
     # data_after = pre_lof(twitter_example_data,'2017-10-05','2017-10-19')
@@ -38,14 +42,19 @@ def get_db_data():
     starttime = '2017-01-01'
     endtime = '2017-12-30'
 
+    #数据sql
     sql = "select id,dt_time,dt_val from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('"  +starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" +endtime+"','yyyy/mm/dd')"
-
     data = select(sql)
+
+    #泵站名字集合
+    fields_sql =  "select id from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('"  +starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" +endtime+"','yyyy/mm/dd') group by id"
+    fields=select(sql)
 
     # 处理成python 可识别的
     df = pd.DataFrame(list(data), columns=['id','dt_time','dt_val'])
 
     print(df)
+    return df
 
 '''时间序列的 S-H-ESD 算法测试 '''
 ''' 时间周期越短越准确'''
@@ -89,12 +98,8 @@ def create_median():
 
 '''差分法 测试'''
 
-def create_arima():
-    # 显示所有列
-    pd.set_option('display.max_columns', None)
-    # 显示所有行
-    pd.set_option('display.max_rows', None)
-    data = get_data()
+def create_arima(field,data):
+    data[['dt_val']]=data[['dt_val']].astype(float)
     print(data)
     plt.figure()
     data['dt_val'].plot()
@@ -129,45 +134,50 @@ def create_arima():
 
     #3.缺失数据
     # 补充了数据 ,这时补充的数据都是 0
-    df_period = data.resample('D', on='dt_time').sum()
+    data2 = data.copy()
+    data2['dt_time']=data2['dt_time'].astype('datetime64')
+    df_period = data2.resample('D', on='dt_time').sum()
     df_period=df_period.reset_index()
     data_miss = []
-    for index, row in df_period.iterrows():  # 获取每行的index、row
-        if data[(data.dt_time == row[0])].index.tolist():
-           a=1;
-        else:
-            data_miss.append(row[0])
-            t_str=str(row[0])
-            d=datetime.datetime.strptime(t_str, '%Y-%m-%d %H:%M:%S')+datetime.timedelta(days=-1)
-            print("缺失时间:",str(d))
+    # 求差集
+    a=df_period.copy();
+    b = data.copy()
+    b['dt_time']=b['dt_time'].astype('datetime64')
+    miss_result=a.append(b).drop_duplicates(subset=['dt_time'], keep=False)
+    data_miss=miss_result.dt_time.tolist()
 
 
-    print("it处理数据",it)
-    end = it.tail(1)["key"].index.values[0]#最后一个不做处理
-    print("剔除mode后,长度为",len(it_copy),",剔除mode后,长度为", len(it),it.tail(1)["key"])
 
-    it1=it_copy[it_copy['key'].isin(model)]
-    print("model的个数为:",len(it1))
+    # 判断没有model的情况  证明没有异常点
+    if not (operator.eq(model, obj)):
+        print("it处理数据",it)
+        end = it.tail(1)["key"].index.values[0]#最后一个不做处理
 
-    # 寻找异常点
-    for row in it.itertuples(index=True, name='Pandas'):
-        if(row[1]<0 and row[0]>0 and row[0]<end) :
-                    #当前点与model的差值
-                    now = dist(row[1],model[0]);
-                    #前一个点与model的差值
-                    last=dist(it_copy.loc[[row[0] - 1]].values,model[0]);
+        # a=it.iloc[len(it), 1]
+        print("剔除mode后,长度为",len(it_copy),",剔除mode后,长度为", len(it),it.tail(1)["key"])
 
-                    if (round(it_copy.loc[row[0] - 1]["key"], 3)!= round(model[0], 3) and last>0 and abs(last) > 4 * abs(model[0])):
-                        print("前一个点信息:",row[0] - 1, it_copy.loc[[row[0] - 1]].key, "是异常点")
-                        data_index.append(row[0] - 1)
-                        continue
+        it1=it_copy[it_copy['key'].isin(model)]
+        print("model的个数为:",len(it1))
 
-                    # 后一个点与model的差值
-                    next=dist(it_copy.loc[[row[0] + 1]].values,model[0]);
-                    print(it_copy.loc[row[0] + 1]["key"])
-                    if (round(it_copy.loc[row[0] + 1]["key"], 3)!= round(model[0], 3) and next > 0 and abs(next) > 4 * abs(model[0])):
-                        print("当前点信息:", row[0] , it.loc[[row[0]]]["key"], "是异常点")
-                        data_index.append(row[0] )
+        # 寻找异常点
+        for row in it.itertuples(index=True, name='Pandas'):
+            if(row[1]<0 and row[0]>0 and row[0]<end) :
+                        #当前点与model的差值
+                        now = dist(row[1],model[0]);
+                        #前一个点与model的差值
+                        last=dist(it_copy.loc[[row[0] - 1]].values,model[0]);
+
+                        if (round(it_copy.loc[row[0] - 1]["key"], 3)!= round(model[0], 3) and last>0 and abs(last) > 4 * abs(model[0])):
+                            print("前一个点信息:",row[0] - 1, it_copy.loc[[row[0] - 1]].key, "是异常点")
+                            data_index.append(row[0] - 1)
+                            continue
+
+                        # 后一个点与model的差值
+                        next=dist(it_copy.loc[[row[0] + 1]].values,model[0]);
+                        print(it_copy.loc[row[0] + 1]["key"])
+                        if (round(it_copy.loc[row[0] + 1]["key"], 3)!= round(model[0], 3) and next > 0 and abs(next) > 4 * abs(model[0])):
+                            print("当前点信息:", row[0] , it.loc[[row[0]]]["key"], "是异常点")
+                            data_index.append(row[0] )
 
     data_index=[i + 1 for i in data_index]#修正为元数据中的位置
     data_error=[]#异常点集合
@@ -208,11 +218,13 @@ def create_arima():
    #汇总所有数据
     list_all=pd.concat([datas_normal, datas_zero, datas_miss, datas_minus, datas_max], axis=0,
                                ignore_index=True)
+    list_all['id']=[field for i in range(len(list_all))]  # 添加id列
 
     list_all = list_all.sort_values(by = 'dt_time',axis = 0,ascending = True)#按时间排序
+    list_all.reset_index()
 
     oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data, 'data_in1')
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'error_out1')
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'data_out1')
     print(list_all)
     df.plot()
     plt.show()
@@ -289,8 +301,6 @@ def result(list, old_data, new_data, type):
                 dt_item["dt_val"]=dt_item_old["dt_val"].values  # 老数据中的val
             if type != 0:
                 dt_item["dt_eidt"]=dt_item["dt_val"].values  # 修正值
-            # else:
-            #     dt_item["dt_eidt"]=dt_item["dt_val"].values
             if i == 0:
                 result=dt_item.copy()
                 continue
@@ -298,8 +308,29 @@ def result(list, old_data, new_data, type):
         return result
 
 
+def data_list():
+    starttime='2017-01-01'
+    endtime='2017-12-30'
+    # 数据sql
+    sql="select id,dt_time,dt_val from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd')"
+    datas=select(sql)
+    # 泵站名字集合
+    fields_sql="select id from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') group by id"
+    fields=select(fields_sql)
+
+    # 处理成python 可识别的
+    df=pd.DataFrame(list(datas), columns=['id', 'dt_time', 'dt_val'])
+    for i in range(len(fields)):
+        val =fields[i][0]
+        data=df[(df.id ==fields[i][0])]
+        create_arima(val,data)
+
+
+
 
 if __name__ ==  '__main__':
-    get_db_data()
+    data_list()
+
+
 
 
