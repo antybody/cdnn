@@ -328,6 +328,7 @@ def data_list(starttime,endtime):
         val =fields[i][0]
         print(val)
         data=df[(df.id ==fields[i][0])]
+		data.index=[i for i in range(len(data))]
         create_arima(val,data)
 
 
