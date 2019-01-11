@@ -10,7 +10,7 @@ from  cdnn.models.arima import arima_run
 from  cdnn.models.smooth import moving_average,fast_moving_average
 from  cdnn.models.clof import clof
 
-from cdnn.predata.pre_lof import pre_lof, replace_zero, replace_data
+from cdnn.predata.pre_lof import pre_lof, replace_zero, replace_data_lg
 from  cdnn.predata.pre_knn import pre_knn
 
 import pandas as pd
@@ -204,7 +204,7 @@ def create_arima(field,data):
     data_normal=data[~data['dt_time'].isin(Elist)]
 
     data_amend = replace_zero(df_period.copy())#负值替换成0
-    data_amend =replace_data(data_amend.copy())#0替换成修正值
+    data_amend =replace_data_lg(data_amend.copy())#0替换成修正值
     data_amend=data_amend.reset_index()
 
     #处理结果封装成标准字段
@@ -222,12 +222,16 @@ def create_arima(field,data):
 
     list_all = list_all.sort_values(by = 'dt_time',axis = 0,ascending = True)#按时间排序
     list_all.reset_index()
+    list_all['dt_time']=list_all['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
 
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data, 'data_in1')
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'data_out1')
+    #类型转换
+    list_all=list_all.astype('str')
+    data=data.astype('object')
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data, 'data_in')
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'error_out')
     print(list_all)
-    df.plot()
-    plt.show()
+    # df.plot()
+    # plt.show()
 
 '''滑动平均 测试'''
 
@@ -308,9 +312,7 @@ def result(list, old_data, new_data, type):
         return result
 
 
-def data_list():
-    starttime='2017-01-01'
-    endtime='2017-12-30'
+def data_list(starttime,endtime):
     # 数据sql
     sql="select id,dt_time,dt_val from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd')"
     datas=select(sql)
@@ -322,6 +324,7 @@ def data_list():
     df=pd.DataFrame(list(datas), columns=['id', 'dt_time', 'dt_val'])
     for i in range(len(fields)):
         val =fields[i][0]
+        print(val)
         data=df[(df.id ==fields[i][0])]
         create_arima(val,data)
 
@@ -329,7 +332,9 @@ def data_list():
 
 
 if __name__ ==  '__main__':
-    data_list()
+    starttime='2017-01-01'
+    endtime='2017-12-30'
+    data_list(starttime,endtime)
 
 
 
