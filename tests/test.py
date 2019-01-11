@@ -291,25 +291,27 @@ def dist(num, model):
     new_data:对比数据
     type:异常类型
     '''
-
 def result(list, old_data, new_data, type):
-        if not list:
-            return pd.DataFrame()
-        result=[]
-        for i, values in enumerate(list):
-            dt_item=new_data[(new_data.dt_time == str(values))].copy()  # 获取一行数据
+    if not list:
+        return pd.DataFrame()
+    result=[]
+    for i, values in enumerate(list):
+        dt_item=new_data[(new_data.dt_time == str(values))].copy()  # 获取一行数据
 
-            dt_item["dt_reason"]=type  # 添加异常类型
-            if type != 1:  # 如果不是缺失数据就填充其原始数据
-                dt_item_old=old_data[(old_data.dt_time == str(values))].copy()  # 获取一行数据传入原数据
-                dt_item["dt_val"]=dt_item_old["dt_val"].values  # 老数据中的val
-            if type != 0:
-                dt_item["dt_eidt"]=dt_item["dt_val"].values  # 修正值
-            if i == 0:
-                result=dt_item.copy()
-                continue
-            result=result.append(dt_item, ignore_index=True)
-        return result
+        dt_item["dt_reason"]=type  # 添加异常类型
+        dt_item["dt_eidt"]=dt_item["dt_val"].values  # 修正值
+        if type != 1:  # 如果不是缺失数据就填充其原始数据
+            dt_item_old=old_data[(old_data.dt_time == str(values))].copy()  # 获取一行数据传入原数据
+            dt_item["dt_val"]=dt_item_old["dt_val"].values  # 老数据中的val
+        else:
+            dt_item["dt_val"]=''  # 老数据中的val
+        # else:
+        #     dt_item["dt_eidt"]=dt_item["dt_val"].values
+        if i == 0:
+            result=dt_item.copy()
+            continue
+        result=result.append(dt_item, ignore_index=True)
+    return result
 
 
 def data_list(starttime,endtime):
