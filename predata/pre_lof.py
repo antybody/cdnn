@@ -108,3 +108,24 @@ def replace_zero(data):
         if (data['dt_val'][i] < 0):
             print(data['dt_val'][i])
     return data
+
+# 拉格朗日1
+def replace_data_lg_max(df_period):
+    # pd.set_option('display.max_rows', None)
+    # 替换空值为其他值
+    df_period_clone = df_period
+    df_period_clone.replace(0, 0, inplace=True)
+
+    # 平滑后的数据
+    isnullcon = df_period_clone.isnull().any()
+    # print(isnullcon['FP_TOTALENG'])
+    # 这里来个判断，如果数据里没有需要平滑的点，那么直接输出
+    df_peroid_v = df_period_clone['dt_eidt']
+    df_peroid_v.reset_index(drop=True, inplace=True)
+    print(df_peroid_v.index)
+    if isnullcon['dt_eidt']:
+        for j in range(len(df_period_clone)):
+            if df_period_clone['dt_eidt'][j]==0:
+                df_period_clone['dt_eidt'][j] = ploy(df_peroid_v, j)
+
+    return df_period_clone
