@@ -45,7 +45,7 @@ def pre_lof(data,year,year1):
 
 
 #将0值替换为平缓数据
-def replace_data(df_period):
+def replace_data(df_period,field):
     pd.set_option('display.max_rows', None)
     # 替换空值为其他值
     df_period_clone = df_period
@@ -55,18 +55,18 @@ def replace_data(df_period):
     isnullcon = df_period_clone.isnull().any()
     # print(isnullcon['FP_TOTALENG'])
     # 这里来个判断，如果数据里没有需要平滑的点，那么直接输出
-    df_peroid_v = df_period_clone['dt_val']
+    df_peroid_v = df_period_clone[field]
     df_peroid_v.reset_index(drop=True,inplace=True)
     print(df_peroid_v.index)
-    if isnullcon['dt_val']:
-        df_after = impy.locf(df_period_clone, axis='dt_val')
+    if isnullcon[field]:
+        df_after = impy.locf(df_period_clone, axis=field)
         for i in range(len(df_period_clone)):
             print('-----平缓后数据-----')
             print(df_after[0][i])
             print('-----平缓前数据-----')
-            print(df_period['dt_val'][i])
+            print(df_period[field][i])
 
-            df_period_clone['dt_val'][i] = df_after[0][i]
+            df_period_clone[field][i] = df_after[0][i]
     # print(df_period_clone)
     return df_period_clone
 
@@ -99,15 +99,16 @@ def ploy(s,n,k=4):
     out = lagrange(y.index, list(y))(n)
     return round(out,2)
 
-#将负值替换为0
-def replace_zero(data):
+#将指定列值替换为0
+def replace_zero(data,field):
     # data = datas.copy()
     data=data.set_index('dt_time')
     for i in range(len(data)):
-        aaa=data['dt_val'][i]
-        if (data['dt_val'][i] < 0):
-            print(data['dt_val'][i])
+        aaa=data[field][i]
+        if (data[field][i] < 0):
+            print(data[field][i])
     return data
+
 
 # 拉格朗日1
 def replace_data_lg_max(df_period):
@@ -129,3 +130,4 @@ def replace_data_lg_max(df_period):
                 df_period_clone['dt_eidt'][j] = ploy(df_peroid_v, j)
 
     return df_period_clone
+
