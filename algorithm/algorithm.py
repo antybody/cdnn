@@ -99,18 +99,12 @@ def create_median():
 '''差分法 测试'''
 
 def create_arima(field,data):
-    data['dt_time']=data['dt_time'].astype('datetime64')
-    data=data.sort_values(by='dt_time', axis=0, ascending=True)  # 按时间排序
-
-    data['dt_time']=data['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
-    data.index=[i for i in range(len(data))]
     # 显示所有列
     pd.set_option('display.max_columns', None)
     # 显示所有行
     pd.set_option('display.max_rows', None)
 
     data[['dt_val']]=data[['dt_val']].astype(float)
-
     print(data)
     plt.figure()
     data['dt_val'].plot()
@@ -170,42 +164,31 @@ def create_arima(field,data):
         it1=it_copy[it_copy['key'].isin(model)]
         print("model的个数为:",len(it1))
 
-        if field=='37480_2':
-            a=1
-
         # 寻找异常点
         for row in it.itertuples(index=True, name='Pandas'):
             if(row[1]<0 and row[0]>0 and row[0]<end) :
-
-                        #module对比值
-                        module = 0
-                        if len(model)==1:
-                            module=round(model[0], 3)
-                            mulriple=0.1 * abs(model[0])
                         #当前点与model的差值
-                        now = dist(row[1],module);
-
-                        # 同为负值的情况
-                        # if (row[0] > 1 and round(it_copy.loc[row[0] - 1]["key"], 3) < 0):
-                        #     print("前一点是异常点(双负):", row[0] - 1, it.loc[[row[0] - 1]]["key"])
-                        #     data_index.append(row[0] - 1)
-                        #     continue
+                        now = dist(row[1],model[0]);
                         #前一个点与model的差值
-                        last=dist(it_copy.loc[[row[0] - 1]].values,module);
+                        last=dist(it_copy.loc[[row[0] - 1]].values,model[0]);
 
-                        if (round(it_copy.loc[row[0] - 1]["key"], 3)!= module and last>0 ):
+                        if (round(it_copy.loc[row[0] - 1]["key"], 3)!= round(model[0], 3) and last>0 and abs(last) > 3 * abs(model[0])):
                             print("前一个点信息:",row[0] - 1, it_copy.loc[[row[0] - 1]].key, "是异常点")
                             data_index.append(row[0] - 1)
                             continue
 
                         # 后一个点与model的差值
-                        next=dist(it_copy.loc[[row[0] + 1]].values,module);
+                        next=dist(it_copy.loc[[row[0] + 1]].values,model[0]);
                         print(it_copy.loc[row[0] + 1]["key"])
-                        if (round(it_copy.loc[row[0] + 1]["key"], 3)!= module and next > 0):
+                        if (round(it_copy.loc[row[0] + 1]["key"], 3)!= round(model[0], 3) and next > 0 and abs(next) > 3 * abs(model[0])):
                             print("当前点信息:", row[0] , it.loc[[row[0]]]["key"], "是异常点")
                             data_index.append(row[0] )
                             continue
 
+                        #同为负值的情况
+                        # if (row[0]>1 and round(it_copy.loc[row[0] -2]["key"], 3)!= round(model[0], 3) and round(it_copy.loc[row[0] -2]["key"], 3)<0 and now < 0 ):
+                        #     print("当前点信息:", row[0]-2 , it.loc[[row[0]-2]]["key"], "后置异常点")
+                        #     data_index.append(row[0]-2 )
 
     data_index=[i + 1 for i in data_index]#修正为元数据中的位置
     data_error=[]#异常点集合
@@ -215,6 +198,7 @@ def create_arima(field,data):
         print("序号：%s   值：%s" % (i + 1, val))
         if i in data_allindex:
             data_error.append(data.loc[[val]].dt_time[val])
+
 
    #极值
     Elist = data_zero
@@ -230,8 +214,8 @@ def create_arima(field,data):
     #构标准时间段
     data_normal=data[~data['dt_time'].isin(Elist)]
 
-    data_amend = replace_zero(df_period.copy(),'dt_val')#负值替换成0
-    # data_amend =replace_data_lg(data_amend.copy())#0替换成修正值
+    data_amend = replace_zero(df_period.copy())#负值替换成0
+    data_amend =replace_data_lg(data_amend.copy())#0替换成修正值
     data_amend=data_amend.reset_index()
 
     #处理结果封装成标准字段
@@ -241,21 +225,13 @@ def create_arima(field,data):
     datas_minus=result(data_minus, data, data_amend, 3)
     #极值处理
     datas_max=result(data_max, data, data_amend, 4)
-
-    # 异常二次寻找
-    bj=error_filter(datas_normal, datas_max)
-    if not bj.empty:
-        # 去掉异常数据
-        datas_normal=datas_normal.append(bj).drop_duplicates(subset=['dt_time'], keep=False)
-
     if not datas_max.empty:
         datas_max.dt_eidt=[0 for i in range(len(datas_max))]
-        # datas_max=replace_data_lg_max(datas_max.copy())  # 0替换成修正值
+        datas_max=replace_data_lg_max(datas_max.copy())  # 0替换成修正值
         # datas_max=datas_max.reset_index()
 
-
    #汇总所有数据
-    list_all=pd.concat([datas_normal, datas_zero, datas_miss, datas_minus, datas_max,bj], axis=0,
+    list_all=pd.concat([datas_normal, datas_zero, datas_miss, datas_minus, datas_max], axis=0,
                                ignore_index=True)
     list_all['id']=[field for i in range(len(list_all))]  # 添加id列
 
@@ -263,16 +239,14 @@ def create_arima(field,data):
     list_all.reset_index()
     list_all['dt_time']=list_all['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
 
-    # 错误数据 修正
-    list_all = replace_data_lg(list_all.copy())
-
     #类型转换
     list_all=list_all.astype('str')
     data=data.astype('object')
-    # oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data, 'data_in2')
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'data_out')
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data, 'data_in')
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'error_out')
     print(list_all)
-
+    # df.plot()
+    # plt.show()
 
 '''滑动平均 测试'''
 
@@ -332,34 +306,32 @@ def dist(num, model):
     new_data:对比数据
     type:异常类型
     '''
-
 def result(list, old_data, new_data, type):
-        if not list:
-            return pd.DataFrame()
-        result=[]
-        for i, values in enumerate(list):
-            dt_item=new_data[(new_data.dt_time == str(values))].copy()  # 获取一行数据
+    if not list:
+        return pd.DataFrame()
+    result=[]
+    for i, values in enumerate(list):
+        dt_item=new_data[(new_data.dt_time == str(values))].copy()  # 获取一行数据
 
-            dt_item["dt_reason"]=type  # 添加异常类型
-            dt_item["dt_eidt"]=dt_item["dt_val"].values  # 修正值
-            if type != 1:  # 如果不是缺失数据就填充其原始数据
-                dt_item_old=old_data[(old_data.dt_time == str(values))].copy()  # 获取一行数据传入原数据
-                dt_item["dt_val"]=dt_item_old["dt_val"].values  # 老数据中的val
-            else:
-                dt_item["dt_val"]='' # 老数据中的val
-            # else:
-            #     dt_item["dt_eidt"]=dt_item["dt_val"].values
-            if i == 0:
-                result=dt_item.copy()
-                continue
-            result=result.append(dt_item, ignore_index=True)
-        return result
-
+        dt_item["dt_reason"]=type  # 添加异常类型
+        dt_item["dt_eidt"]=dt_item["dt_val"].values  # 修正值
+        if type != 1:  # 如果不是缺失数据就填充其原始数据
+            dt_item_old=old_data[(old_data.dt_time == str(values))].copy()  # 获取一行数据传入原数据
+            dt_item["dt_val"]=dt_item_old["dt_val"].values  # 老数据中的val
+        else:
+            dt_item["dt_val"]=''  # 老数据中的val
+        # else:
+        #     dt_item["dt_eidt"]=dt_item["dt_val"].values
+        if i == 0:
+            result=dt_item.copy()
+            continue
+        result=result.append(dt_item, ignore_index=True)
+    return result
 
 
 def data_list(starttime,endtime):
     # 数据sql
-    sql="select id,dt_time,dt_val from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') order by to_date(dt_time, 'yyyy/mm/dd')"
+    sql="select id,dt_time,dt_val from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd')"
     datas=select(sql)
     # 泵站名字集合
     fields_sql="select id from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') group by id"
@@ -371,18 +343,9 @@ def data_list(starttime,endtime):
         val =fields[i][0]
         print(val)
         data=df[(df.id ==fields[i][0])]
-        create_arima(val,data)
+        data.index=[i for i in range(len(data))]
+        create_arima(val, data)
 
-
-
-def error_filter(data,exp):
-    result=pd.DataFrame()
-    if  not exp.empty :
-        # 过滤异常集
-        df_groupby=exp[['dt_val']].groupby(by='dt_val', as_index=False).max()
-        df_merge=pd.merge(df_groupby, exp, on=[ 'dt_val'], how='left')
-        result=data[(data.dt_val >= df_merge.loc[0].dt_val) & (data.dt_val <=df_merge.iloc[-1].dt_val)]
-    return result
 
 
 
