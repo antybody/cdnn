@@ -75,7 +75,7 @@ def create_pyculiarity():
     plt.show()
 
 
-''' 四分法 测试'''
+''' 四分法 测试 12'''
 
 def create_median():
     data = get_data()
