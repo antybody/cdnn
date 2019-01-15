@@ -10,7 +10,8 @@ from  cdnn.models.arima import arima_run
 from  cdnn.models.smooth import moving_average,fast_moving_average
 from  cdnn.models.clof import clof
 
-from cdnn.predata.pre_lof import pre_lof, replace_zero, replace_data_lg, replace_data, replace_data_lg_max
+from cdnn.predata.pre_lof import pre_lof, replace_zero, replace_data_lg, replace_data, replace_data_lg_max, \
+    find_inflexion
 from  cdnn.predata.pre_knn import pre_knn
 
 import pandas as pd
@@ -75,7 +76,7 @@ def create_pyculiarity():
     plt.show()
 
 
-''' 四分法 测试 12'''
+''' 四分法 测试'''
 
 def create_median():
     data = get_data()
@@ -99,42 +100,57 @@ def create_median():
 '''差分法 测试'''
 
 def create_arima(field,data):
+
+    #原数据预处理
+    data['dt_time']=data['dt_time'].astype('datetime64')
+    data[['dt_val']]=data[['dt_val']].astype(float)
+    data=data.sort_values(by='dt_time', axis=0, ascending=True)  # 按时间排序
+    data['dt_time']=data['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
+    data.index=[i for i in range(len(data))]
     # 显示所有列
     pd.set_option('display.max_columns', None)
     # 显示所有行
     pd.set_option('display.max_rows', None)
-
-    data[['dt_val']]=data[['dt_val']].astype(float)
     print(data)
     plt.figure()
     data['dt_val'].plot()
-    df = arima_run(data)
-    obj=np.array(df).tolist();
-    print("差值数据")
-    print(df)
-    print("obj是",len(obj),"df",len(df))
-    model = get_mode(obj)
-    print("众数",model[0])
-    it=pd.DataFrame({'key': obj })
 
+    model=None
+    # 找到拐点,定义model
+    inflexion=find_inflexion(data[(data.dt_val != 0)].dt_val)
+    data_head=None
+    data_foot=None
+    df=arima_run(data)
+    obj=np.array(df).tolist();
+    if (inflexion != 0):
+        data_head=data[0:inflexion]
+        data_foot=data[inflexion:]
+        model=get_modes(data_head)
+        model=model+get_modes(data_foot)
+        inflexion=inflexion-1
+    else:
+        print("差值数据")
+        print(df)
+        print("obj是", len(obj), "df", len(df))
+        model=get_mode(obj)
+        print("众数", model[0])
+
+    it=pd.DataFrame({'key': obj })
     it_copy=it.copy()
 
     # 删除/选取某列含有特定数值的行
     # 通过~取反，选取不包含数字model的行
-    it=it[~it['key'].isin(model)]
-
-
-    print("剔除mode后")
+    if (inflexion != 0):#多model不予剔除model
+        it=it[~it['key'].isin(model)]
+        print("剔除mode后")
 
 
     data_index = [];#记录所有异常点的坐标位置,在元数据中
 
     #1.找出0位置
-    data_zero=data[(data.dt_val == 0)].dt_time.tolist()
-
-
+    data_zero=data[(data.dt_val == 0)]
     # 2.找出负值位置
-    data_minus=data[(data.dt_val < 0)].dt_time.tolist()
+    data_minus=data[(data.dt_val < 0)]
 
 
     #3.缺失数据
@@ -143,107 +159,139 @@ def create_arima(field,data):
     data2['dt_time']=data2['dt_time'].astype('datetime64')
     df_period = data2.resample('D', on='dt_time').sum()
     df_period=df_period.reset_index()
-    data_miss = []
+    data_miss = None
     # 求差集
     a=df_period.copy();
     b = data.copy()
     b['dt_time']=b['dt_time'].astype('datetime64')
-    miss_result=a.append(b).drop_duplicates(subset=['dt_time'], keep=False)
-    data_miss=miss_result.dt_time.tolist()
-
-
+    data_miss=a.append(b).drop_duplicates(subset=['dt_time'], keep=False)
 
     # 判断没有model的情况  证明没有异常点
     if not (operator.eq(model, obj)):
         print("it处理数据",it)
         end = it.tail(1)["key"].index.values[0]#最后一个不做处理
 
-        # a=it.iloc[len(it), 1]
-        print("剔除mode后,长度为",len(it_copy),",剔除mode后,长度为", len(it),it.tail(1)["key"])
+            # a=it.iloc[len(it), 1]
+        print("剔除mode后,长度为", len(it_copy), ",剔除mode后,长度为", len(it), it.tail(1)["key"])
 
         it1=it_copy[it_copy['key'].isin(model)]
-        print("model的个数为:",len(it1))
+        print("model的个数为:", len(it1))
+
+        if field=='37480_2':
+            a=1
 
         # 寻找异常点
         for row in it.itertuples(index=True, name='Pandas'):
-            if(row[1]<0 and row[0]>0 and row[0]<end) :
-                        #当前点与model的差值
-                        now = dist(row[1],model[0]);
-                        #前一个点与model的差值
-                        last=dist(it_copy.loc[[row[0] - 1]].values,model[0]);
 
-                        if (round(it_copy.loc[row[0] - 1]["key"], 3)!= round(model[0], 3) and last>0 and abs(last) > 3 * abs(model[0])):
+            if(row[1]<0 and row[0]>0 and row[0]<end and data.loc[row[0]+1].dt_val!=0) :
+
+                        # module对比值
+                        module=round(model[0], 3)
+                        # 动态选取model 有拐点情况
+                        if (inflexion != 0 and row[0]==inflexion):
+                            module=round(model[1], 3)
+
+                        #当前点与model的差值
+                        now = dist(row[1],module);
+
+                        # 同为负值的情况
+                        if (row[0] > 1 and round(it_copy.loc[row[0] - 1]["key"], 3) < 0):
+                            print("前一点是异常点(双负):", row[0] - 1, it.loc[[row[0] - 1]]["key"])
+                            data_index.append(row[0] - 1)
+                            continue
+                        #前一个点与model的差值
+                        last=dist(it_copy.loc[[row[0] - 1]].values,module);
+
+                        if (round(it_copy.loc[row[0] - 1]["key"], 3)!= module and last>0 ):
                             print("前一个点信息:",row[0] - 1, it_copy.loc[[row[0] - 1]].key, "是异常点")
                             data_index.append(row[0] - 1)
                             continue
 
                         # 后一个点与model的差值
-                        next=dist(it_copy.loc[[row[0] + 1]].values,model[0]);
+                        next=dist(it_copy.loc[[row[0] + 1]].values,module);
                         print(it_copy.loc[row[0] + 1]["key"])
-                        if (round(it_copy.loc[row[0] + 1]["key"], 3)!= round(model[0], 3) and next > 0 and abs(next) > 3 * abs(model[0])):
+                        if (round(it_copy.loc[row[0] + 1]["key"], 3)!= module and next > 0):
                             print("当前点信息:", row[0] , it.loc[[row[0]]]["key"], "是异常点")
                             data_index.append(row[0] )
                             continue
 
-                        #同为负值的情况
-                        # if (row[0]>1 and round(it_copy.loc[row[0] -2]["key"], 3)!= round(model[0], 3) and round(it_copy.loc[row[0] -2]["key"], 3)<0 and now < 0 ):
-                        #     print("当前点信息:", row[0]-2 , it.loc[[row[0]-2]]["key"], "后置异常点")
-                        #     data_index.append(row[0]-2 )
+    if len(data_index)==1:
+        data_index.clear()
 
-    data_index=[i + 1 for i in data_index]#修正为元数据中的位置
-    data_error=[]#异常点集合
+    data_error=pd.DataFrame()
+    if len(data_index) > 0:
+        if(field=='18527_2'):
+            a=1
+        data_index=[i + 1 for i in data_index]#修正为元数据中的位置
+        er_item = pd.DataFrame()
+        for j in range(len(data_index)):
+            data_error=data_error.append(data[(data.index == data_index[j])], ignore_index=True)
 
-    data_allindex = data.index.tolist()
-    for i, val in enumerate(data_index):
-        print("序号：%s   值：%s" % (i + 1, val))
-        if i in data_allindex:
-            data_error.append(data.loc[[val]].dt_time[val])
+    # 极值
+    data_max=pd.DataFrame()
+    if data_error.empty:
+        data_error_item = data_error.copy()
+        data_error_item = data_error_item.append(data_zero)
+        data_error_item=data_error_item.append(data_minus)
+        # data_error_item=data_error_item.append(data_miss)
+        data_max=data_error_item.drop_duplicates(subset=['dt_time'], keep=False)
 
 
-   #极值
-    Elist = data_zero
-    if data_minus :
-        Elist=Elist+data_minus
-    if data_miss:
-        Elist=Elist+data_miss
-    data_max=list(set(data_error).difference(set(Elist)))
-    #无异常数列
-    if data_max:
-        Elist=Elist+data_max
+    #无异常部分
+    data_normal = pd.DataFrame()
+    data_item=pd.concat([ data_zero, data_miss, data_minus, data_max], axis=0,
+                       ignore_index=True)
+    if data_error.empty:
+        data_normal=df_period.copy().append(data_item).drop_duplicates(subset=['dt_time'], keep=False)
 
-    #构标准时间段
-    data_normal=data[~data['dt_time'].isin(Elist)]
 
-    data_amend = replace_zero(df_period.copy())#负值替换成0
-    data_amend =replace_data_lg(data_amend.copy())#0替换成修正值
-    data_amend=data_amend.reset_index()
+#二次过滤异常值
+    bj=None
+    if not data_max.empty:
+        # 异常二次寻找
+        bj=error_filter(data_normal, data_max)
+        if not bj.empty:
+            # 去掉异常数据
+            datas_normal=data_normal.append(bj).drop_duplicates(subset=['dt_time'], keep=False)
+            data_max=data_max.append(bj, ignore_index=True)
 
     #处理结果封装成标准字段
-    datas_normal=result(data_normal.dt_time.tolist(), data, data_amend, 0)
-    datas_zero=result(data_zero, data, data_amend, 2)
-    datas_miss = result(data_miss, data, data_amend, 1)#缺失值
-    datas_minus=result(data_minus, data, data_amend, 3)
+    datas_normal= result(data_normal, 0)
+    datas_zero=result(data_zero, 2)
+    datas_miss = result(data_miss, 1)#缺失值
+    datas_minus=result(data_minus, 3)
     #极值处理
-    datas_max=result(data_max, data, data_amend, 4)
-    if not datas_max.empty:
-        datas_max.dt_eidt=[0 for i in range(len(datas_max))]
-        datas_max=replace_data_lg_max(datas_max.copy())  # 0替换成修正值
-        # datas_max=datas_max.reset_index()
+    datas_max=result(data_max, 4)
+
+
+    #异常填充成0
+    error_item=pd.concat([data_zero, data_miss, data_minus, data_max], axis=0,
+                        ignore_index=True)
+    if error_item.empty:
+        for j in range(len(error_item)):
+            if not np.isnan(error_item['dt_val'][j]):
+                error_item['dt_eidt'][j]=0
 
    #汇总所有数据
     list_all=pd.concat([datas_normal, datas_zero, datas_miss, datas_minus, datas_max], axis=0,
                                ignore_index=True)
     list_all['id']=[field for i in range(len(list_all))]  # 添加id列
 
-    list_all = list_all.sort_values(by = 'dt_time',axis = 0,ascending = True)#按时间排序
+    # list_all = list_all.sort_values(by = 'dt_time',axis = 0,ascending = True)#按时间排序
     list_all.reset_index()
-    list_all['dt_time']=list_all['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
+    # list_all['dt_time']=list_all['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
 
+
+    #统一修正错误值
+    for j in range(len(list_all)):
+        if not np.isnan(list_all['dt_val'][j]):
+            list_all['dt_eidt'][j]=list_all['dt_val'][j]
+    list_all=replace_data_lg(list_all.copy())
     #类型转换
     list_all=list_all.astype('str')
     data=data.astype('object')
     oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data, 'data_in')
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'error_out')
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'data_out')
     print(list_all)
     # df.plot()
     # plt.show()
@@ -299,6 +347,13 @@ def dist(num, model):
     result=num - model
     return result
 
+
+def get_modes(l):
+    df=arima_run(l)
+    obj=np.array(df).tolist();
+    model=get_mode(obj)
+    return model
+
     '''
     #把list整理成标准json   data为修正后的数据
     list:要处理的时间戳
@@ -306,27 +361,17 @@ def dist(num, model):
     new_data:对比数据
     type:异常类型
     '''
-def result(list, old_data, new_data, type):
-    if not list:
-        return pd.DataFrame()
-    result=[]
-    for i, values in enumerate(list):
-        dt_item=new_data[(new_data.dt_time == str(values))].copy()  # 获取一行数据
 
-        dt_item["dt_reason"]=type  # 添加异常类型
-        dt_item["dt_eidt"]=dt_item["dt_val"].values  # 修正值
-        if type != 1:  # 如果不是缺失数据就填充其原始数据
-            dt_item_old=old_data[(old_data.dt_time == str(values))].copy()  # 获取一行数据传入原数据
-            dt_item["dt_val"]=dt_item_old["dt_val"].values  # 老数据中的val
-        else:
-            dt_item["dt_val"]=''  # 老数据中的val
-        # else:
-        #     dt_item["dt_eidt"]=dt_item["dt_val"].values
-        if i == 0:
-            result=dt_item.copy()
-            continue
-        result=result.append(dt_item, ignore_index=True)
-    return result
+def result(new_data, type):
+    if new_data.empty:
+        return pd.DataFrame()
+    new_data["dt_reason"]=[type for i in range(len(new_data))]
+    if type != 0:  # 如果不是正常数据就填充0
+        new_data["dt_eidt"]=[0 for i in range(len(new_data))]
+    else:
+        new_data["dt_eidt"]=[np.nan for i in range(len(new_data))]
+    return new_data
+
 
 
 def data_list(starttime,endtime):
@@ -343,9 +388,18 @@ def data_list(starttime,endtime):
         val =fields[i][0]
         print(val)
         data=df[(df.id ==fields[i][0])]
-        data.index=[i for i in range(len(data))]
-        create_arima(val, data)
+        create_arima(val,data)
 
+
+
+def error_filter(data,exp):
+    result=pd.DataFrame()
+    if  not exp.empty :
+        # 过滤异常集
+        df_groupby=exp[['dt_val']].groupby(by='dt_val', as_index=False).max()
+        df_merge=pd.merge(df_groupby, exp, on=[ 'dt_val'], how='left')
+        result=data[(data.dt_val >= df_merge.loc[0].dt_val) & (data.dt_val <=df_merge.iloc[-1].dt_val)]
+    return result
 
 
 
