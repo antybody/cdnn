@@ -254,6 +254,7 @@ def create_arima(field,data):
     list_all.reset_index()
     list_all['dt_time']=list_all['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
 
+    list_all['dt_type'] ='diff'
     #统一修正错误值
     list_all=replace_data_lg(list_all.copy())
 
