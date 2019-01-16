@@ -29,7 +29,7 @@ sheetname = ['86-2','12021-2','37480-2','18527_2','19573_3']
 
 
 def get_data():
-    twitter_example_data = pd.read_excel('D:\workroot\workspace\pythonpace1\python\cdnn\data\ele.xlsx',sheet_name=sheetname[2])
+    twitter_example_data = pd.read_excel('D:\workroot\workspace\pythonpace1\python\cdnn\data\ele.xls',sheet_name=sheetname[0])
     # 这次是处理后的数据
     data_after = pre_lof(twitter_example_data, '', '')
     # data_after = pre_lof(twitter_example_data, '2017', '')
@@ -442,10 +442,10 @@ def result(list, old_data, new_data, type):
 #方法选择
 def fun_choice(func,val, data):
     parse_func = {
-        "create_arima": create_arima(val, data),
-        "create_median": create_median(val, data)
+        "create_arima": create_arima,
+        "create_median": create_median
     }
-    parse_func[func]  # 执行相应方法
+    parse_func[func](val, data)  # 执行相应方法
 
 
 def data_list(func,starttime,endtime):
