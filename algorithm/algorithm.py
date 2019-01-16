@@ -89,7 +89,6 @@ def create_median(field,data):
     #处理异常数据l
     # 1.找出0位置
     data_zero=data[(data.dt_val == 0)]
-    # a > 1? "执行表达式1": "执行表达式2"
     # 2.找出负值位置
     data_minus=data[(data.dt_val < 0)]
 
