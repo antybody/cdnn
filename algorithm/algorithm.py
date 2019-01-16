@@ -262,7 +262,7 @@ def create_arima(field,data):
     list_all=list_all.astype('str')
     data=data.astype('object')
     # oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data, 'data_in4')
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'data_out')
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'error_out')
     print(datetime.datetime.now())
     # print(list_all)
     # df.plot()

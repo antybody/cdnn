@@ -13,10 +13,24 @@
 
 # tests/test 测试脚本
 
+# db 访问数据库的配置
 
-#下一步 把 异常点 -- 校核成正确值 knn 或者lof 方法
+# algorithm 最终方法
 
-#预测
+
+## 环境配置
+ -- python 3.7
+ -- 相关工具安装包 见 执行config 下 pyInstall 
+ -- 重点 ox_Oracle 需要配置环境变量（这个可自行百度，windows 和 mac 配置方法不同）
+
+## JAVA 接口访问
+ -- 见java 文件夹内的示例代码
+ -- 具体见代码
+ -- 传递的参数 主要是 时间范围（start,end） + 检测算法
+
+
+
+
 
 
 
