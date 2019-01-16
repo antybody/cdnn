@@ -11,7 +11,7 @@ import numpy as np
 
 def detectoutliers(data):
 
-    dt = data['FP_TOTALENG']
+    dt = data['dt_val']
     dt = (np.array(dt).tolist())
     outlier_list_title = []
     outlier_list_col = []
@@ -34,7 +34,7 @@ def detectoutliers(data):
     #     if float(dt[n]) < Q1 - outlier_step or float(dt[n]) > Q3 + outlier_step:
     #         outlier_list_title.append(data[n:n+1]['TIMESTAMP'])
     #         outlier_list_col.append(data[n:n+1]['FP_TOTALENG'])
-    dd = data[ (data['FP_TOTALENG'] < Q1 - outlier_step) | (data['FP_TOTALENG'] > Q3 + outlier_step)]
+    dd = data[ (data['dt_val'] < Q1 - outlier_step) | (data['dt_val'] > Q3 + outlier_step)]
 
     return dd
 
