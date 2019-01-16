@@ -1,21 +1,21 @@
 # cdnn
-# models/median 四分位算法
+## models/median 四分位算法
   
-# models/clof 聚类
+## models/clof 聚类
 
-# models/arima 指数平滑
+## models/arima 指数平滑
 
-# models/smooth 滑动平均
+## models/smooth 滑动平均
 
-# pyculiarity/时间序列 
+## pyculiarity/时间序列 
 
-# predata/pre_lof 数据遗漏处理
+## predata/pre_lof 数据遗漏处理
 
-# tests/test 测试脚本
+## tests/test 测试脚本
 
-# db 访问数据库的配置
+## db 访问数据库的配置
 
-# algorithm 最终方法
+## algorithm 最终方法
 
 
 ## 环境配置
