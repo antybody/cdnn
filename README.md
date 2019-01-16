@@ -22,6 +22,11 @@
  -- python 3.7  <br>
  -- 相关工具安装包 见 执行config 下 pyInstall <br>
  -- 重点 ox_Oracle 需要配置环境变量（这个可自行百度，windows 和 mac 配置方法不同）<br>
+ 
+## python 在java 项目中的配置
+ -- 1、python 包 随意放在java 项目内
+ -- 2、在跟 python 包 同根目录下放置 run.py 文件
+ -- 3、java 代码里 访问 run.py 即可（run.py 文件 在java 目录下）
 
 ## JAVA 接口访问
  -- 见java 文件夹内的示例代码 <br>
