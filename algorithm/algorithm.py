@@ -439,9 +439,18 @@ def result(list, old_data, new_data, type):
 
 
 
-def data_list(starttime,endtime):
+#方法选择
+def fun_choice(func,val, data):
+    parse_func = {
+        "create_arima": create_arima(val, data),
+        "create_median": create_median(val, data)
+    }
+    parse_func[func]  # 执行相应方法
+
+
+def data_list(func,starttime,endtime):
     # 数据sql
-    sql="select id,dt_time,dt_val from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') order by to_date(dt_time,'yyyy/mm/dd')"
+    sql="select id,dt_time,dt_val from error_in where 1=1  and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') order by to_date(dt_time,'yyyy/mm/dd')"
     datas=select(sql)
     # 泵站名字集合
     fields_sql="select id from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') group by id"
@@ -452,8 +461,8 @@ def data_list(starttime,endtime):
     for i in range(len(fields)):
         val =fields[i][0]
         # print(val)
-        data=df[(df.id ==fields[i][0])]
-        create_arima(val,data)
+        data=df[(df.id ==val)]
+        fun_choice(func, val, data)
 
 
 
@@ -471,7 +480,7 @@ def error_filter(data,exp):
 if __name__ ==  '__main__':
     starttime='2017-01-01'
     endtime='2017-12-30'
-    data_list(starttime,endtime)
+    data_list("create_median", starttime, endtime)
 
 
 
