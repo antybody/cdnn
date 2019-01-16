@@ -19,17 +19,17 @@
 
 
 ## 环境配置
- -- python 3.7
- -- 相关工具安装包 见 执行config 下 pyInstall 
- -- 重点 ox_Oracle 需要配置环境变量（这个可自行百度，windows 和 mac 配置方法不同）
+ -- python 3.7  <br>
+ -- 相关工具安装包 见 执行config 下 pyInstall <br>
+ -- 重点 ox_Oracle 需要配置环境变量（这个可自行百度，windows 和 mac 配置方法不同）<br>
 
 ## JAVA 接口访问
- -- 见java 文件夹内的示例代码
- -- 具体见代码
+ -- 见java 文件夹内的示例代码 <br>
+ -- 具体见代码 <br>
  -- 传递的参数 主要是 时间范围（start,end） + 检测算法 （diff -- 默认就是差分）
 
 ## 数据库说明
- -- error_in 
+ -- error_in  <br>
  -- error_out  dt_edit 是 修正后的值，dt_val 原始值 ,dt_reason 修改原因 0 正常，1 缺失值 2 负值 3 零 4 极值
 
 
