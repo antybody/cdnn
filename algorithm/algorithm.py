@@ -59,21 +59,105 @@ def get_db_data():
 
 '''时间序列的 S-H-ESD 算法测试 '''
 ''' 时间周期越短越准确'''
-def create_pyculiarity():
-    data = get_data()
+def create_pyculiarity(field,data):
+
+    if(field=='17872_2'):
+        a=1
+
+    if len(data)<14:#过滤掉小于2周的数据
+        return
+
+    data['dt_time']=pd.to_datetime(data['dt_time'])
+    data[['dt_val']]=data[['dt_val']].astype(float)
+
+    data_copy=data.copy()
+    data.drop("id", axis=1, inplace=True)
     plt.figure()
 
-    plt.plot(pd.to_datetime(data['TIMESTAMP']), data['FP_TOTALENG'], label=u'first')
+    plt.plot(pd.to_datetime(data['dt_time']), data['dt_val'], label=u'first')
     # 调用方法
     results = detect_ts(data,
                         max_anoms=0.3,
                         direction='both', e_value=True)
-    # 输入检测结果
-    print(results)
+
+    # 补充0后的数据 对比数据
+    errors_result=get_errors(data_copy)
+    df_period=errors_result[0]
+    # 3.找出data缺失值
+    data_miss=errors_result[1]
+    datas_zero=pd.DataFrame()#0值异常
+    datas_miss=pd.DataFrame()#缺失值异常
+    datas_minus=pd.DataFrame()#负值异常
+    datas_max=pd.DataFrame()#极值异常
+    datas_normal=pd.DataFrame()#无异常集合
+    list_all=pd.DataFrame()#处理后的结果集
+    if not results['anoms'].empty:
+        # 输入检测结果
+        print(results['anoms'])
+        error_all = results['anoms'].copy()
+        error_all.drop("expected_value", axis=1, inplace=True)
+        error_all.rename(columns={'timestamp':'dt_time','anoms':'dt_val'}, inplace=True)
+
+        # 处理异常数据l
+        # 1.找出0位置
+        data_zero=error_all[(error_all.dt_val == 0)]
+        # 2.找出负值位置
+        data_minus=error_all[(error_all.dt_val < 0)]
+
+        # 4.极值
+        data_max=error_all
+        if not error_all.empty:
+            a = error_all.copy()
+            b=pd.concat([data_zero.copy(), data_minus.copy()], axis=0,
+                                ignore_index=True)
+            data_max=a.append(b).drop_duplicates(subset=['dt_time'], keep=False)
+
+            # 5.无异常数列
+            # 所有异常数据
+            error_all=pd.concat([data_zero, data_miss, data_minus, data_max], axis=0,
+                                ignore_index=True)
+
+            data_normal=df_period.copy().append(error_all).drop_duplicates(subset=['dt_time'], keep=False)
+            # 处理结果封装成标准字段
+            datas_normal=result(data_normal.dt_time.tolist(), data_copy, df_period, 0)
+            datas_zero=result(data_zero.dt_time.tolist(), data_copy, df_period, 2)
+            datas_miss=result(data_miss.dt_time.tolist(), data_copy, df_period, 1)  # 缺失值
+            datas_minus=result(data_minus.dt_time.tolist(), data_copy, df_period, 3)
+            # 极值处理
+            datas_max=result(data_max.dt_time.tolist(), data_copy, df_period, 4)
+    else:
+        datas_miss=result(data_miss.dt_time.tolist(), data_copy, df_period, 1)  # 缺失值
+        data_normal=df_period.copy().append(datas_miss).drop_duplicates(subset=['dt_time'], keep=False)
+        # 处理结果封装成标准字段
+        datas_normal=result(data_normal.dt_time.tolist(), data_copy, df_period, 0)
+
+
+
+    # 汇总所有数据
+    list_all=pd.concat([datas_normal, datas_zero, datas_miss, datas_minus, datas_max], axis=0,
+                               ignore_index=True)
+    list_all['id']=field  # 添加id列
+    list_all=list_all.sort_values(by='dt_time', axis=0, ascending=True)  # 按时间排序
+    list_all.reset_index()
+    list_all['dt_time']=list_all['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
+
+    list_all['dt_type']='pyculiarity'
+    # 统一修正错误值
+    list_all=replace_data_lg(list_all.copy())
+
+    # 类型转换
+    list_all=list_all.astype('str')
+    data_copy=data_copy.astype('object')
+    data_copy['dt_time']=data_copy['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data_copy, 'data_in4')
+    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", list_all, 'data_out4')
+    print(datetime.datetime.now())
+
+
     x = pd.to_datetime(results['anoms']['timestamp'])
     plt.plot(x, results['anoms']['anoms'], 'ro', label='check')
     plt.legend()
-    plt.show()
+    # plt.show()
 
 
 ''' 四分法 测试'''
@@ -462,6 +546,7 @@ def data_list(func,starttime,endtime):
         val =fields[i][0]
         # print(val)
         data=df[(df.id ==val)]
+        data.index=[i for i in range(len(data))]
         fun_choice(func, val, data)
 
 
