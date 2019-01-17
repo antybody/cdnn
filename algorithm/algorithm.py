@@ -60,21 +60,13 @@ def get_db_data():
 '''时间序列的 S-H-ESD 算法测试 '''
 ''' 时间周期越短越准确'''
 def create_pyculiarity(field,data):
-
-    if(field=='17872_2'):
-        a=1
-
     if len(data)<14:#过滤掉小于2周的数据
         return
-
+    print(datetime.datetime.now())
     data['dt_time']=pd.to_datetime(data['dt_time'])
     data[['dt_val']]=data[['dt_val']].astype(float)
-
     data_copy=data.copy()
     data.drop("id", axis=1, inplace=True)
-    plt.figure()
-
-    plt.plot(pd.to_datetime(data['dt_time']), data['dt_val'], label=u'first')
     # 调用方法
     results = detect_ts(data,
                         max_anoms=0.3,
@@ -93,7 +85,6 @@ def create_pyculiarity(field,data):
     list_all=pd.DataFrame()#处理后的结果集
     if not results['anoms'].empty:
         # 输入检测结果
-        print(results['anoms'])
         error_all = results['anoms'].copy()
         error_all.drop("expected_value", axis=1, inplace=True)
         error_all.rename(columns={'timestamp':'dt_time','anoms':'dt_val'}, inplace=True)
@@ -149,16 +140,10 @@ def create_pyculiarity(field,data):
     list_all=list_all.astype('str')
     data_copy=data_copy.astype('object')
     data_copy['dt_time']=data_copy['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
-    db=getConfig()
-    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], data_copy, 'data_in4')
-    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'data_out4')
+
+    db= getConfig()
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'error_out')
     print(datetime.datetime.now())
-
-
-    x = pd.to_datetime(results['anoms']['timestamp'])
-    plt.plot(x, results['anoms']['anoms'], 'ro', label='check')
-    plt.legend()
-    # plt.show()
 
 
 ''' 四分法 测试'''
@@ -223,17 +208,9 @@ def create_median(field,data):
     list_all=list_all.astype('str')
     data=data.astype('object')
     db=getConfig()
-    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], data_copy, 'data_in')
-    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'data_out')
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'error_out')
     print(datetime.datetime.now())
 
-    plt.title(u'median')
-    plt.plot(data['dt_time'], dt, label=u'first')
-
-    # print(x,y)
-    plt.plot(l['dt_time'], l['dt_time'], 'ro', label='check')
-    plt.legend()
-    # plt.show()
 
 
 '''差分法 测试'''
@@ -245,14 +222,10 @@ def create_arima(field,data):
     data[['dt_val']]=data[['dt_val']].astype(float)
     # data=data.sort_values(by='dt_time', axis=0, ascending=True)  # 按时间排序
     data['dt_time']=data['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
-    data.index=[i for i in range(len(data))]
     # # 显示所有列
     # pd.set_option('display.max_columns', None)
     # # 显示所有行
     # pd.set_option('display.max_rows', None)
-    # print(data)
-    # plt.figure()
-    # data['dt_val'].plot()
 
     model=None
     # 找到拐点,定义model
@@ -268,11 +241,7 @@ def create_arima(field,data):
         model=model+get_modes(data_foot)
         inflexion=inflexion-1
     else:
-        # print("差值数据")
-        # print(df)
-        # print("obj是", len(obj), "df", len(df))
         model=get_mode(obj)
-        # print("众数", model[0])
 
     it=pd.DataFrame({'key': obj })
     it_copy=it.copy()
@@ -401,12 +370,8 @@ def create_arima(field,data):
     list_all=list_all.astype('str')
     data=data.astype('object')
     db=getConfig()
-    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], data, 'data_in')
-    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'data_out')
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'error_out')
     print(datetime.datetime.now())
-    # print(list_all)
-    # df.plot()
-    # plt.show()
 
 '''滑动平均 测试'''
 
@@ -554,7 +519,7 @@ def data_list(func,starttime,endtime):
         fun_choice(func, val, data)
 
 
-
+#错误二次过滤
 def error_filter(data,exp):
     result=pd.DataFrame()
     if  not exp.empty :

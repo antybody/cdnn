@@ -18,17 +18,13 @@ def detectoutliers(data):
 
     # Q1 为数据占25% 的数据值范围
     Q1 = np.percentile(dt,25)
-    print(Q1)
 
     #Q3 为数据占 75% 的数据范围
     Q3 = np.percentile(dt,75)
-    print(Q3)
 
     IQR = Q3 - Q1
-
     # 异常值的范围
     outlier_step = 1.5* IQR
-    print(outlier_step)
 
     # for n in range(len(dt)):
     #     if float(dt[n]) < Q1 - outlier_step or float(dt[n]) > Q3 + outlier_step:
