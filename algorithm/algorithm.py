@@ -150,8 +150,8 @@ def create_pyculiarity(field,data):
     data_copy=data_copy.astype('object')
     data_copy['dt_time']=data_copy['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
     db=getConfig()
-    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], data_copy, 'data_in')
-    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'data_out')
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], data_copy, 'data_in4')
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'data_out4')
     print(datetime.datetime.now())
 
 
