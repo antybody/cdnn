@@ -3,7 +3,7 @@ import datetime
 import operator
 
 from sqlalchemy import create_engine
-
+from cdnn.db.conns import getConfig
 from cdnn.pyculiarity import detect_ts
 from  cdnn.models.median import detectoutliers
 from  cdnn.models.arima import arima_run
@@ -149,8 +149,9 @@ def create_pyculiarity(field,data):
     list_all=list_all.astype('str')
     data_copy=data_copy.astype('object')
     data_copy['dt_time']=data_copy['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data_copy, 'data_in4')
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", list_all, 'data_out4')
+    db=getConfig()
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], data_copy, 'data_in')
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'data_out')
     print(datetime.datetime.now())
 
 
@@ -221,8 +222,9 @@ def create_median(field,data):
     # 类型转换
     list_all=list_all.astype('str')
     data=data.astype('object')
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data_copy, 'data_in')
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", list_all, 'data_out')
+    db=getConfig()
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], data_copy, 'data_in')
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'data_out')
     print(datetime.datetime.now())
 
     plt.title(u'median')
@@ -398,8 +400,9 @@ def create_arima(field,data):
     #类型转换
     list_all=list_all.astype('str')
     data=data.astype('object')
-    # oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl", data, 'data_in4')
-    oracleUtil("gxsy:gxsy123@120.26.116.232:1521/orcl",list_all, 'error_out')
+    db=getConfig()
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], data, 'data_in')
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'data_out')
     print(datetime.datetime.now())
     # print(list_all)
     # df.plot()
@@ -527,7 +530,8 @@ def result(list, old_data, new_data, type):
 def fun_choice(func,val, data):
     parse_func = {
         "create_arima": create_arima,
-        "create_median": create_median
+        "create_median": create_median,
+        "create_pyculiarity":create_pyculiarity
     }
     parse_func[func](val, data)  # 执行相应方法
 
