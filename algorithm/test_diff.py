@@ -1,16 +1,10 @@
 #-*-coding:utf-8-*-
-
-# 从excel 中读取数据
-
 import pandas as pd
 
 import matplotlib.pyplot as plt
 
+from cdnn.pyculiarity import detect_ts
 from  cdnn.models.median import detectoutliers
-
-'''
-  以下是测试数据
-'''
 
 ele_file = '../data/eles.xlsx' # 电力数据
 
@@ -24,19 +18,20 @@ dt = data.sort_values( by='TIMESTAMP',ascending=True)
 
 dt_992 = dt[dt['ID'] == 992]
 
-# print(dt_992)
-
 dt = dt_992['dt_val']
 
+# print(dt_992['TIMESTAMP'][1:])
+D_data = dt_992['dt_val'].diff()
 
-l = detectoutliers(dt_992)
+print(D_data)
 
 
-plt.plot( dt_992['TIMESTAMP'],dt, label=u'first')
+plt.plot( dt_992['TIMESTAMP'],dt_992['dt_val'], label=u'first')
 
 # print(x,y)
-plt.plot(l['TIMESTAMP'], l['dt_val'], 'ro',label='check')
+plt.plot(dt_992['TIMESTAMP'], D_data,label='check')
 
 plt.legend()
 
 plt.show()
+
