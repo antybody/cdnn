@@ -16,6 +16,8 @@ def create_median(field,data):
     data['dt_time'] = pd.to_datetime(data['dt_time'])
     data[['dt_val']]=data[['dt_val']].astype(float)
     dt = data['dt_val']
+
+    #异常集合
     l = detectoutliers(data)
 
     #处理异常数据l
@@ -34,10 +36,11 @@ def create_median(field,data):
     # 4.极值
     data_max=l
     if not l.empty:
-        a = l.copy()
-        b=pd.concat([data_zero.copy(), data_minus.copy()], axis=0,
-                            ignore_index=True)
-        data_max=a.append(b).drop_duplicates(subset=['dt_time'], keep=False)
+        if not l[l.dt_val<=0].empty:
+            a = l.copy()
+            b=pd.concat([data_zero.copy(), data_minus.copy()], axis=0,
+                                ignore_index=True)
+            data_max=a.append(b).drop_duplicates(subset=['dt_time'], keep=False)
     # 5.无异常数列
 
     # 所有异常数据
@@ -65,7 +68,21 @@ def create_median(field,data):
     # 统一修正错误值??????
     dt_error=pd.concat([datas_miss, datas_max], axis=0,
                        ignore_index=True)
+    dt_error=dt_error.sort_values(by='dt_time', axis=0, ascending=True)  # 按时间排序
+
     list_all = amendment(dt_error,list_all)#修正错误
+
+    plt.title(u'median')
+    plt.plot(df_period['dt_time'], df_period['dt_val'], label=u'first')
+
+    # print(x,y)
+    plt.plot(df_period['dt_time'], df_period['dt_val'], 'ro', label='check')
+
+    plt.legend()
+
+    plt.show()
+
+
     # 类型转换
     list_all=list_all.astype('str')
     data=data.astype('object')
@@ -155,9 +172,27 @@ def amendment(dt_error,list_all):
             else:
                 #取当前数据的前3位平均值 作为修正值
                 item_val=0.0;
+                this_year = int(str(dt_error.iloc[i]['dt_time']).split("/")[0])#当前年
                 for j in range(1, 4):
-                    item_val=item_val + list_all[(list_all.dt_time == getTime(str(dt_error.iloc[i]['dt_time']), -j))][
-                        "dt_eidt"].values[0]
+                    it_time = getTime(str(dt_error.iloc[i]['dt_time']), -j)
+
+                    #判断是否小于本年
+                    if int(it_time.split("/")[0])<this_year :
+                        break;
+                    it_val = list_all[(list_all.dt_time == it_time)]["dt_eidt"].values[0]
+
+                    #是0值继续取前一天
+                    if it_val<=0:
+                        while(True):
+                            it_time=getTime(it_time, -j)
+                            it_val=list_all[(list_all.dt_time == it_time)]["dt_eidt"].values[0]
+                            if int(it_time.split("/")[0]) < this_year:
+                                break;
+                            if it_val >0:
+                                break;
+
+
+                    item_val=item_val + it_val
                 dt_item["dt_eidt"]=item_val / 3
             dt_item["dt_eidt"]=round(dt_item["dt_eidt"],2)
             list_all[(list_all.dt_time == str(dt_error.iloc[i]['dt_time']))]=dt_item
