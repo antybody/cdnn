@@ -5,7 +5,7 @@ import pandas as pd
 
 # 数据库相关
 from cdnn.db.main import select
-
+from cdnn.pyculiarity import detect_ts
 from cdnn.utils.publicUtil import  oracleUtil
 
 ''' 四分法 测试'''
@@ -77,6 +77,95 @@ def create_median(field,data):
     data=data.astype('object')
     db=getConfig()
     oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'error_out18')
+    print(datetime.datetime.now())
+
+
+'''时间序列的 S-H-ESD 算法测试 '''
+''' 时间周期越短越准确'''
+def create_pyculiarity(field,data):
+    if len(data)<14:#过滤掉小于2周的数据
+        return
+    print(datetime.datetime.now())
+    data['dt_time']=pd.to_datetime(data['dt_time'])
+    data[['dt_val']]=data[['dt_val']].astype(float)
+    data_copy=data.copy()
+    data.drop("id", axis=1, inplace=True)
+    # 调用方法
+    results = detect_ts(data,
+                        max_anoms=0.3,
+                        direction='both', e_value=True)
+
+    # 补充0后的数据 对比数据
+    errors_result=get_errors(data_copy)
+    df_period=errors_result[0]
+    # 3.找出data缺失值
+    data_miss=errors_result[1]
+    datas_zero=pd.DataFrame()#0值异常
+    datas_miss=pd.DataFrame()#缺失值异常
+    datas_minus=pd.DataFrame()#负值异常
+    datas_max=pd.DataFrame()#极值异常
+    datas_normal=pd.DataFrame()#无异常集合
+    list_all=pd.DataFrame()#处理后的结果集
+    if not results['anoms'].empty:
+        # 输入检测结果
+        error_all = results['anoms'].copy()
+        error_all.drop("expected_value", axis=1, inplace=True)
+        error_all.rename(columns={'timestamp':'dt_time','anoms':'dt_val'}, inplace=True)
+
+        # 处理异常数据l
+        # 1.找出0位置
+        data_zero=error_all[(error_all.dt_val == 0)]
+        # 2.找出负值位置
+        data_minus=error_all[(error_all.dt_val < 0)]
+
+        # 4.极值
+        data_max=error_all
+        if not error_all.empty:
+            a = error_all.copy()
+            b=pd.concat([data_zero.copy(), data_minus.copy()], axis=0,
+                                ignore_index=True)
+            data_max=a.append(b).drop_duplicates(subset=['dt_time'], keep=False)
+
+            # 5.无异常数列
+            # 所有异常数据
+            error_all=pd.concat([data_zero, data_miss, data_minus, data_max], axis=0,
+                                ignore_index=True)
+
+            data_normal=df_period.copy().append(error_all).drop_duplicates(subset=['dt_time'], keep=False)
+            # 处理结果封装成标准字段
+            datas_normal=result(data_normal.dt_time.tolist(), data_copy, df_period, 0)
+            datas_zero=result(data_zero.dt_time.tolist(), data_copy, df_period, 2)
+            datas_miss=result(data_miss.dt_time.tolist(), data_copy, df_period, 1)  # 缺失值
+            datas_minus=result(data_minus.dt_time.tolist(), data_copy, df_period, 3)
+            # 极值处理
+            datas_max=result(data_max.dt_time.tolist(), data_copy, df_period, 4)
+    else:
+        datas_miss=result(data_miss.dt_time.tolist(), data_copy, df_period, 1)  # 缺失值
+        data_normal=df_period.copy().append(datas_miss).drop_duplicates(subset=['dt_time'], keep=False)
+        # 处理结果封装成标准字段
+        datas_normal=result(data_normal.dt_time.tolist(), data_copy, df_period, 0)
+
+    # 汇总所有数据
+    list_all=pd.concat([datas_normal, datas_zero, datas_miss, datas_minus, datas_max], axis=0,
+                               ignore_index=True)
+    list_all['id']=field  # 添加id列
+    list_all=list_all.sort_values(by='dt_time', axis=0, ascending=True)  # 按时间排序
+    list_all.reset_index(drop=True, inplace=True)
+    list_all['dt_time']=list_all['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
+
+    list_all['dt_type']='pyculiarity'
+    # 统一修正错误值
+    dt_error=pd.concat([datas_miss, datas_max], axis=0,
+                       ignore_index=True)
+    list_all = amendment(dt_error,list_all)#修正错误
+
+    # 类型转换
+    list_all=list_all.astype('str')
+    data_copy=data_copy.astype('object')
+    data_copy['dt_time']=data_copy['dt_time'].apply(lambda x: datetime.datetime.strftime(x, '%Y/%m/%d'))
+
+    db= getConfig()
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'error_out9')
     print(datetime.datetime.now())
 
 '''
@@ -162,6 +251,8 @@ def amendment(dt_error,list_all):
                 #取当前数据的前3位平均值 作为修正值
                 item_val=0.0;
                 this_year = int(str(dt_error.iloc[i]['dt_time']).split("/")[0])#当前年
+                item_count = 0;#累加次数
+                is_flag = False;
                 for j in range(1, 4):
                     it_time = getTime(str(dt_error.iloc[i]['dt_time']), -j)
 
@@ -172,17 +263,27 @@ def amendment(dt_error,list_all):
 
                     #是0值继续取前一天
                     if it_val<=0:
+                        _count = 0;
                         while(True):
-                            it_time=getTime(it_time, -j)
+                            it_time=getTime(it_time, -1)
                             it_val=list_all[(list_all.dt_time == it_time)]["dt_eidt"].values[0]
                             if int(it_time.split("/")[0]) < this_year:
                                 break;
                             if it_val >0:
-                                break;
-
-
+                                _count=_count + 1;
+                                #连续找4-j个数
+                                if _count<=4-j :
+                                    item_count=item_count + 1;
+                                    item_val=item_val + it_val
+                                    continue;
+                                else:
+                                    break;
+                        is_flag=True;
+                    if is_flag:
+                        break;
+                    item_count=item_count+1;
                     item_val=item_val + it_val
-                dt_item["dt_eidt"]=item_val / 3
+                dt_item["dt_eidt"]=item_val / item_count
             dt_item["dt_eidt"]=round(dt_item["dt_eidt"],2)
             list_all[(list_all.dt_time == str(dt_error.iloc[i]['dt_time']))]=dt_item
     return list_all
@@ -202,17 +303,18 @@ def getTime(t_str,day):
 #方法选择
 def fun_choice(func,val, data):
     parse_func = {
-        "create_median": create_median
+        "create_median": create_median,
+        "create_pyculiarity":create_pyculiarity
     }
     parse_func[func](val, data)  # 执行相应方法
 
 
 def data_list(func,starttime,endtime):
     # 数据sql
-    sql="select id,dt_time,dt_val from error_in where 1=1  and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') order by to_date(dt_time,'yyyy/mm/dd')"
+    sql="select id,dt_time,dt_val from error_in1 where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') order by to_date(dt_time,'yyyy/mm/dd')"
     datas=select(sql)
     # 泵站名字集合
-    fields_sql="select id from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') group by id"
+    fields_sql="select id from error_in1 where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') group by id"
     fields=select(fields_sql)
 
     # 处理成python 可识别的
