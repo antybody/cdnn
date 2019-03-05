@@ -72,22 +72,11 @@ def create_median(field,data):
 
     list_all = amendment(dt_error,list_all)#修正错误
 
-    plt.title(u'median')
-    plt.plot(df_period['dt_time'], df_period['dt_val'], label=u'first')
-
-    # print(x,y)
-    plt.plot(df_period['dt_time'], df_period['dt_val'], 'ro', label='check')
-
-    plt.legend()
-
-    plt.show()
-
-
     # 类型转换
     list_all=list_all.astype('str')
     data=data.astype('object')
     db=getConfig()
-    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'error_out8')
+    oracleUtil(db['username'] + ':' + db['password'] + '@' + db['url'] + '/' + db['sid'], list_all, 'error_out18')
     print(datetime.datetime.now())
 
 '''
