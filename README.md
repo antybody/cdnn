@@ -21,7 +21,7 @@
 ## 环境配置
  -- python 3.7  <br>
  -- 相关工具安装包 见 执行config 下 pyInstall <br>
- -- 重点 ox_Oracle 需要配置环境变量（这个可自行百度，windows 和 mac 配置方法不同）<br>
+ -- 重点 cx_Oracle 需要配置环境变量（这个可自行百度，windows 和 mac 配置方法不同）<br>
  
 ## python 在java 项目中的配置
  -- 1、python 包 随意放在java 项目内  <br>
