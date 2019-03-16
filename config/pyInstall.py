@@ -1,6 +1,6 @@
 import os
 def getTxt():
-        txt = open("menu.txt","r").read()
+        txt = open("./menu.txt","r").read()
         for dd in ",":
                 txt=txt.replace(dd," ")
         return txt
