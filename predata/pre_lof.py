@@ -142,11 +142,21 @@ def cal_countines_dt(dt):
 
 # 替换处理如果是大量缺失的情况
 def lot_miss(dt,dt_flag,j):
-    ft = dt['dt_eidt'][dt_flag[0]-1]
-    ed = dt['dt_eidt'][dt_flag[len(dt_flag)-1]+2]
+    if (dt_flag[0]) ==0:
+        ft = dt['dt_eidt'][dt_flag[len(dt_flag)-1]+2]
+    else:
+        ft = dt['dt_eidt'][dt_flag[0]-1]
+
+    if (dt_flag[-1] == len(dt)):
+        ed = ft
+    else:
+        ed = dt['dt_eidt'][dt_flag[len(dt_flag)-1]+2]
     # 平均数
     dt_mean  = round((ed - ft)/len(dt_flag) ,2)
-    pre_dt = dt['dt_eidt'][j-1]
+    if j == 0 :
+        pre_dt = 0
+    else:
+        pre_dt = dt['dt_eidt'][j-1]
     if dt_mean >=0 :
         dt_final = round(pre_dt + dt_mean,2)
     else:
@@ -156,15 +166,21 @@ def lot_miss(dt,dt_flag,j):
 
 # 按平均值计算点
 def ploy_mean(dt,j):
-    ft = dt['dt_eidt'][j-1]
-    ed = dt['dt_eidt'][j+3]
-    # 平均数
-    dt_mean  = round((ed - ft)/4 ,2)
-    pre_dt = dt['dt_eidt'][j-1]
 
-    dt_final = round(pre_dt + dt_mean,2)
+    if j == 0 :
+        return dt['dt_eidt'][1]
+    elif j == len(dt)-1:
+        return dt['dt_eidt'][-2]
+    else:
+        ft = dt['dt_eidt'][j-1]
+        ed = dt['dt_eidt'][j+3]
+        # 平均数
+        dt_mean  = round((ed - ft)/4 ,2)
+        pre_dt = dt['dt_eidt'][j-1]
 
-    return dt_final
+        dt_final = round(pre_dt + dt_mean,2)
+
+        return dt_final
 
 # 拉格朗日
 def ploy(s,n,k=3):
