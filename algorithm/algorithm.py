@@ -503,17 +503,19 @@ def fun_choice(func,val, data):
 
 def data_list(func,starttime,endtime):
     # 数据sql
-    sql="select id,dt_time,dt_val from error_in where 1=1  and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') order by to_date(dt_time,'yyyy/mm/dd')"
+    sql="select id,dt_time,dt_val from error_in where 1=1  and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd')" \
+        "and id not in (select distinct id from error_out) order by to_date(dt_time,'yyyy/mm/dd')"
     datas=select(sql)
     # 泵站名字集合
-    fields_sql="select id from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') group by id"
+    fields_sql="select id from error_in where 1=1 and to_date(dt_time,'yyyy/mm/dd') >=  to_date('" + starttime + "','yyyy/mm/dd') and  to_date(dt_time,'yyyy/mm/dd') <= to_date('" + endtime + "','yyyy/mm/dd') " \
+         "and id not in (select distinct id from error_out) group by id"
     fields=select(fields_sql)
 
     # 处理成python 可识别的
     df=pd.DataFrame(list(datas), columns=['id', 'dt_time', 'dt_val'])
     for i in range(len(fields)):
         val =fields[i][0]
-        # print(val)
+        print(val)
         data=df[(df.id ==val)]
         data=data.drop_duplicates(subset=['dt_time'], keep='first')
         data.reset_index(drop=True, inplace=True)
