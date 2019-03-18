@@ -515,7 +515,8 @@ def data_list(func,starttime,endtime):
         val =fields[i][0]
         # print(val)
         data=df[(df.id ==val)]
-        data.index=[i for i in range(len(data))]
+        data=data.drop_duplicates(subset=['dt_time'], keep='first')
+        data.reset_index(drop=True, inplace=True)
         fun_choice(func, val, data)
 
 
