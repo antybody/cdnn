@@ -8,6 +8,7 @@
 import pandas as pd
 import numpy as np
 import impyute as impy
+import array
 
 from scipy import interpolate
 from scipy.interpolate import lagrange
@@ -73,6 +74,11 @@ def replace_data(df_period,field):
     return df_period_clone
 
 # 拉格朗日
+'''
+  重新修改了，
+  如果是大批量的异常的话，插补数据就出现问题了
+  解决了该问题
+'''
 def replace_data_lg(df_period):
     # pd.set_option('display.max_rows', None)
     # 替换空值为其他值
@@ -87,16 +93,78 @@ def replace_data_lg(df_period):
     df_peroid_v.reset_index(drop=True, inplace=True)
     df_peroid_v_clone = df_peroid_v.copy()
     inflex =  find_inflexion(df_peroid_v_clone)
+    dt_flag = cal_countines_dt(df_period_clone)
+    dt_array_flag = [item for sublist in dt_flag for item in sublist]
+    # print(dt_array_flag)
     # print(df_peroid_v.index)
+
     if isnullcon['dt_eidt']:
         for j in range(len(df_period_clone)):
+            out = False
+            kk = 0
             if np.isnan(df_period_clone['dt_eidt'][j]):
-                if abs(j - inflex ) > 3 or inflex == 0:
-                    df_period_clone['dt_eidt'][j] = ploy(df_peroid_v, j)
+                for i in range(len(dt_flag)):
+                    if j in dt_flag[i]:
+                        out = True
+                        kk = i
+                        break
+                if out :
+                    df_period_clone['dt_eidt'][j] = lot_miss(df_period_clone,dt_flag[i],j)
+                elif abs(j - inflex ) > 3 or inflex == 0:
+                    df_period_clone['dt_eidt'][j] =    ploy_mean(df_period_clone,j) #ploy(df_peroid_v, j)
                 else:
                     df_period_clone['dt_eidt'][j] = cal_inflexion_val(df_peroid_v_clone,j)
 
     return df_period_clone
+
+
+# 查找大量连续缺失
+def cal_countines_dt(dt):
+    dt_flag = []
+    dt_tmp = []
+    dt_final = []
+    k = 0
+    for j in range(len(dt)):
+        if np.isnan(dt['dt_eidt'][j]):
+            dt_flag.append(j)
+
+    for j in range(len(dt_flag)-1):
+        if (dt_flag[j+1] - dt_flag[j]) ==1:
+            dt_tmp.append(dt_flag[j])
+            k = k +1
+        else:
+            if k > 3:
+                k = 0
+                dt_tmp.append(dt_tmp[-1]+1)
+                dt_final.append(dt_tmp)
+                dt_tmp = []
+    return dt_final
+
+# 替换处理如果是大量缺失的情况
+def lot_miss(dt,dt_flag,j):
+    ft = dt['dt_eidt'][dt_flag[0]-1]
+    ed = dt['dt_eidt'][dt_flag[len(dt_flag)-1]+2]
+    # 平均数
+    dt_mean  = round((ed - ft)/len(dt_flag) ,2)
+    pre_dt = dt['dt_eidt'][j-1]
+    if dt_mean >=0 :
+        dt_final = round(pre_dt + dt_mean,2)
+    else:
+        dt_final = 0
+
+    return dt_final
+
+# 按平均值计算点
+def ploy_mean(dt,j):
+    ft = dt['dt_eidt'][j-1]
+    ed = dt['dt_eidt'][j+3]
+    # 平均数
+    dt_mean  = round((ed - ft)/4 ,2)
+    pre_dt = dt['dt_eidt'][j-1]
+
+    dt_final = round(pre_dt + dt_mean,2)
+
+    return dt_final
 
 # 拉格朗日
 def ploy(s,n,k=3):
