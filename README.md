@@ -20,6 +20,7 @@
 
 ## 环境配置
  -- python 3.7  <br>
+ -- 注意提前安装好 anacoda 在安装其他第三方会比较方便
  -- 相关工具安装包 见 执行config 下 pyInstall <br>
  -- 重点 cx_Oracle 需要配置环境变量（这个可自行百度，windows 和 mac 配置方法不同）<br>
  
