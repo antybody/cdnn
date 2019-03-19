@@ -133,13 +133,13 @@ def cal_countines_dt(dt):
             dt_tmp.append(dt_flag[j])
             k = k +1
         else:
-            if k > 3:
+            if k > 0:
                 k = 0
                 dt_tmp.append(dt_tmp[-1]+1)
                 dt_final.append(dt_tmp.copy())
                 dt_tmp = []
     else:
-        if k > 3:
+        if k > 0:
             dt_tmp.append(dt_tmp[-1] + 1)
             dt_final.append(dt_tmp.copy())
     return dt_final
@@ -147,18 +147,18 @@ def cal_countines_dt(dt):
 # 替换处理如果是大量缺失的情况
 def lot_miss(dt,dt_flag,j):
     if (dt_flag[0]) ==0:
-        ft = dt['dt_eidt'][dt_flag[len(dt_flag)-1]+2]
+        ft = dt['dt_eidt'][dt_flag[len(dt_flag)-1]+1]
     else:
         ft = dt['dt_eidt'][dt_flag[0]-1]
 
     if (dt_flag[-1] == len(dt)):
         ed = ft
     elif (dt_flag[len(dt_flag)-1]+2) < len(dt):
-        ed = dt['dt_eidt'][dt_flag[len(dt_flag)-1]+2]
+        ed = dt['dt_eidt'][dt_flag[len(dt_flag)-1]+1]
     else:
         ed = ft
     # 平均数
-    dt_mean  = round((ed - ft)/len(dt_flag) ,2)
+    dt_mean  = round((ed - ft)/(len(dt_flag)+1) ,2)
     if j == 0 :
         pre_dt = 0
     else:
@@ -177,11 +177,11 @@ def ploy_mean(dt,j):
         return dt['dt_eidt'][1]
     elif j == len(dt)-1:
         return dt['dt_eidt'][-2]
-    elif (j+3) < len(dt):
+    elif (j+1) < len(dt):
         ft = dt['dt_eidt'][j-1]
-        ed = dt['dt_eidt'][j+3]
+        ed = dt['dt_eidt'][j+1]
         # 平均数
-        dt_mean  = round((ed - ft)/4 ,2)
+        dt_mean  = round((ed - ft)/2 ,2)
         pre_dt = dt['dt_eidt'][j-1]
 
         dt_final = round(pre_dt + dt_mean,2)
