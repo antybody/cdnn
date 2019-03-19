@@ -229,7 +229,9 @@ def create_arima(field,data):
 
     model=None
     # 找到拐点,定义model
-    inflexion=find_inflexion(data[(data.dt_val != 0)].dt_val)
+    inflexion=0;
+    if not data[(data.dt_val != 0)].dt_val.empty:
+        inflexion=find_inflexion(data[(data.dt_val != 0)].dt_val)
     data_head=None
     data_foot=None
     df=arima_run(data)
@@ -364,7 +366,8 @@ def create_arima(field,data):
 
     list_all['dt_type'] ='diff'
     #统一修正错误值
-    list_all=replace_data_lg(list_all.copy())
+	if not data[(data.dt_val != 0)].dt_val.empty:
+		list_all=replace_data_lg(list_all.copy())
 
     #类型转换
     list_all=list_all.astype('str')
