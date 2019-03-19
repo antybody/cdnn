@@ -366,8 +366,8 @@ def create_arima(field,data):
 
     list_all['dt_type'] ='diff'
     #统一修正错误值
-	if not data[(data.dt_val != 0)].dt_val.empty:
-		list_all=replace_data_lg(list_all.copy())
+    if not data[(data.dt_val != 0)].dt_val.empty:
+        list_all=replace_data_lg(list_all.copy())
 
     #类型转换
     list_all=list_all.astype('str')
