@@ -536,8 +536,8 @@ def error_filter(data,exp):
 
 if __name__ ==  '__main__':
     starttime='2017-01-01'
-    endtime='2017-12-30'
-    data_list("create_median", starttime, endtime)
+    endtime='2018-12-31'
+    data_list("create_arima", starttime, endtime)
 
 
 

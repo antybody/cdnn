@@ -136,8 +136,12 @@ def cal_countines_dt(dt):
             if k > 3:
                 k = 0
                 dt_tmp.append(dt_tmp[-1]+1)
-                dt_final.append(dt_tmp)
+                dt_final.append(dt_tmp.copy())
                 dt_tmp = []
+    else:
+        if k > 3:
+            dt_tmp.append(dt_tmp[-1] + 1)
+            dt_final.append(dt_tmp.copy())
     return dt_final
 
 # 替换处理如果是大量缺失的情况
@@ -149,8 +153,10 @@ def lot_miss(dt,dt_flag,j):
 
     if (dt_flag[-1] == len(dt)):
         ed = ft
-    else:
+    elif (dt_flag[len(dt_flag)-1]+2) < len(dt):
         ed = dt['dt_eidt'][dt_flag[len(dt_flag)-1]+2]
+    else:
+        ed = ft
     # 平均数
     dt_mean  = round((ed - ft)/len(dt_flag) ,2)
     if j == 0 :
@@ -171,7 +177,7 @@ def ploy_mean(dt,j):
         return dt['dt_eidt'][1]
     elif j == len(dt)-1:
         return dt['dt_eidt'][-2]
-    else:
+    elif (j+3) < len(dt):
         ft = dt['dt_eidt'][j-1]
         ed = dt['dt_eidt'][j+3]
         # 平均数
@@ -181,6 +187,9 @@ def ploy_mean(dt,j):
         dt_final = round(pre_dt + dt_mean,2)
 
         return dt_final
+    else: # 如果是 前面几位的刚好就等于前面的数值
+        ft = dt['dt_eidt'][j - 1]
+        return ft
 
 # 拉格朗日
 def ploy(s,n,k=3):
