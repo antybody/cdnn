@@ -531,7 +531,7 @@ def data_list(func,starttime,endtime):
         t.start()
         # 添加线程到线程列表
         threads.append(t)
-        if len(threads)>=2:
+        if len(threads)>=10:
             statusFlag = True;
             while statusFlag:
                 item_threads = []#记录已完成的线程
