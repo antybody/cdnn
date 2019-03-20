@@ -516,13 +516,36 @@ def data_list(func,starttime,endtime):
 
     # 处理成python 可识别的
     df=pd.DataFrame(list(datas), columns=['id', 'dt_time', 'dt_val'])
+	threads=[];
     for i in range(len(fields)):
         val =fields[i][0]
         print(val)
         data=df[(df.id ==val)]
         data=data.drop_duplicates(subset=['dt_time'], keep='first')
         data.reset_index(drop=True, inplace=True)
-        fun_choice(func, val, data)
+         # 多线程执行方法
+        t=threading.Thread(target=fun_choice, args=(func, val, data))
+        # 开启线程
+        t.start()
+        # 添加线程到线程列表
+        threads.append(t)
+        if len(threads)>=2:
+            statusFlag = True;
+            while statusFlag:
+                item_threads = []#记录已完成的线程
+                for j in range(len(threads)):
+                    print('线程状态',threads[j].is_alive())
+                    if not threads[j].is_alive():
+                        item_threads.append(threads[j])
+                        statusFlag = False
+                for k in range(len(item_threads)):
+                    threads.remove(item_threads[k])
+                    print('线程', item_threads[k], '已清理')
+                if statusFlag :
+                    print('休眠3秒')
+                    time.sleep(3)
+                else:
+                     break;
 
 
 #错误二次过滤

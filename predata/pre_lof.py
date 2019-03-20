@@ -176,7 +176,7 @@ def ploy_mean(dt,j):
     if j == 0 :
         return dt['dt_eidt'][1]
     elif j == len(dt)-1:
-        return dt['dt_eidt'][-2]
+        return dt.iloc[-2]['dt_eidt']
     elif (j+1) < len(dt):
         ft = dt['dt_eidt'][j-1]
         ed = dt['dt_eidt'][j+1]
