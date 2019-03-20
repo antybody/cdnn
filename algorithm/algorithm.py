@@ -518,7 +518,7 @@ def data_list(func,starttime,endtime):
 
     # 处理成python 可识别的
     df=pd.DataFrame(list(datas), columns=['id', 'dt_time', 'dt_val'])
-	threads=[];
+    threads=[];
     for i in range(len(fields)):
         val =fields[i][0]
         print(val)
